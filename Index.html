@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推し活記録帳</title>
+<style>
+  :root{
+    --paper:#f2f0e6;
+    --paper-line:#dcd8c8;
+    --ink:#242a3b;
+    --ink-soft:#565f77;
+    --stamp-red:#b23a48;
+    --teal:#2f6f6a;
+    --mustard:#c98a2c;
+    --card:#fbfaf5;
+    --shadow: 0 1px 2px rgba(36,42,59,0.08), 0 4px 10px rgba(36,42,59,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic",sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  header.top{
+    background:var(--ink);
+    color:var(--paper);
+    padding:18px 16px 14px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:var(--shadow);
+  }
+  header.top h1{
+    margin:0 0 2px;
+    font-size:19px;
+    letter-spacing:0.04em;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  header.top h1 .stamp{
+    display:inline-block;
+    border:1.5px solid var(--stamp-red);
+    color:#f0a3ab;
+    border-radius:4px;
+    padding:1px 6px;
+    font-size:11px;
+    letter-spacing:0.1em;
+    transform:rotate(-4deg);
+  }
+  header.top p{margin:0;font-size:11.5px;color:#b7bccb;}
+
+nav.tabs{
+display:flex;
+overflow-x:auto;
+gap:6px;
+padding:10px 12px 0;
+background:var(–ink);
+position:sticky;
+top:62px;
+z-index:19;
+}
+nav.tabs button{
+flex:0 0 auto;
+background:#333a52;
+color:#cfd3e2;
+border:none;
+padding:9px 14px;
+border-radius:10px 10px 0 0;
+font-size:13px;
+cursor:pointer;
+white-space:nowrap;
+}
+nav.tabs button.active{
+background:var(–paper);
+color:var(–ink);
+font-weight:700;
+}
+
+main{max-width:760px;margin:0 auto;padding:16px 12px 60px;}
+
+.card{
+background:var(–card);
+border:1px solid var(–paper-line);
+border-radius:12px;
+padding:14px 14px 16px;
+margin-bottom:14px;
+box-shadow:var(–shadow);
+}
+.card h2{margin:0 0 10px;font-size:15px;color:var(–ink);}
+.card h3{margin:0 0 8px;font-size:13.5px;color:var(–ink-soft);font-weight:700;}
+
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cal-header .month-label{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;}
+.cal-header button{
+background:none;border:1px solid var(–paper-line);border-radius:8px;
+width:32px;height:32px;font-size:15px;color:var(–ink);cursor:pointer;
+}
+table.calendar{width:100%;border-collapse:collapse;table-layout:fixed;}
+table.calendar th{
+font-size:11px;color:var(–ink-soft);font-weight:600;padding:4px 0;
+}
+table.calendar td{
+height:56px;
+vertical-align:top;
+border:1px solid var(–paper-line);
+padding:3px 4px;
+cursor:pointer;
+font-size:12px;
+position:relative;
+}
+table.calendar td.empty{background:repeating-linear-gradient(45deg,#eeece1,#eeece1 4px,#f2f0e6 4px,#f2f0e6 8px);cursor:default;}
+table.calendar td.today{outline:2px solid var(–mustard);outline-offset:-2px;}
+table.calendar td.selected{background:#e7e2cd;}
+table.calendar td .d{font-variant-numeric:tabular-nums;color:var(–ink-soft);}
+table.calendar td .badge{
+display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:#fff;
+background:var(–teal);border-radius:6px;padding:1px 4px;text-align:center;
+font-variant-numeric:tabular-nums;
+}
+table.calendar td.sun .d{color:var(–stamp-red);}
+table.calendar td.sat .d{color:#2f5da0;}
+
+.day-panel{border-top:2px dashed var(–paper-line);margin-top:12px;padding-top:12px;}
+.day-panel .date-title{font-weight:700;margin-bottom:8px;font-size:14px;}
+
+.entry-row{
+display:flex;justify-content:space-between;align-items:center;gap:8px;
+background:#fff;border:1px solid var(–paper-line);border-radius:8px;
+padding:8px 10px;margin-bottom:6px;font-size:12.5px;
+}
+.entry-row .info{flex:1;}
+.entry-row .info .line1{font-weight:700;}
+.entry-row .info .line2{color:var(–ink-soft);font-size:11.5px;margin-top:2px;}
+.entry-row .money{font-variant-numeric:tabular-nums;color:var(–stamp-red);font-weight:700;white-space:nowrap;}
+.entry-row .actions{display:flex;gap:4px;}
+.entry-row .actions button{
+border:none;background:var(–paper);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;
+}
+
+form.entry-form{margin-top:10px;}
+form.entry-form .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+form.entry-form label{
+display:flex;flex-direction:column;font-size:11px;color:var(–ink-soft);gap:3px;flex:1;min-width:120px;
+}
+form.entry-form input,form.entry-form select{
+font-size:14px;padding:8px 8px;border:1px solid var(–paper-line);border-radius:8px;background:#fff;color:var(–ink);
+}
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.preset-row button{
+border:1px solid var(–paper-line);background:#fff;border-radius:20px;padding:5px 10px;font-size:11.5px;cursor:pointer;color:var(–ink-soft);
+}
+.preset-row button.active{background:var(–teal);color:#fff;border-color:var(–teal);}
+.submit-btn{
+background:var(–ink);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
+}
+.cancel-edit{background:none;border:none;color:var(–ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;margin-left:10px;}
+
+.agg-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.agg-controls select,.agg-controls input{padding:7px 8px;border-radius:8px;border:1px solid var(–paper-line);font-size:13px;}
+.totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.total-box{background:#fff;border:1px solid var(–paper-line);border-radius:10px;padding:10px 12px;}
+.total-box .label{font-size:11px;color:var(–ink-soft);margin-bottom:4px;}
+.total-box .value{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
+.total-box.money .value{color:var(–stamp-red);}
+.total-box.time .value{color:var(–teal);}
+.total-box.count .value{color:var(–mustard);}
+
+table.breakdown{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+table.breakdown th,table.breakdown td{border:1px solid var(–paper-line);padding:6px 8px;text-align:right;}
+table.breakdown th:first-child,table.breakdown td:first-child{text-align:left;}
+table.breakdown thead th{background:#eeece1;}
+
+.datamgmt .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.datamgmt button, .datamgmt label.file-btn{
+background:var(–ink);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;display:inline-block;
+}
+.datamgmt button.danger{background:var(–stamp-red);}
+.datamgmt input[type=file]{display:none;}
+.hint{font-size:11.5px;color:var(–ink-soft);line-height:1.6;}
+.empty-msg{color:var(–ink-soft);font-size:12.5px;padding:10px 0;}
+.cat-tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;color:#fff;margin-right:4px;}
+.cat-nekomimi{background:#c98a2c;}
+.cat-metsumuri{background:#7a5fc4;}
+.cat-other{background:#8d8d8d;}
+</style>
+
+</head>
+<body>
+
+<header class="top">
+  <h1>推し活記録帳 <span class="stamp">LEDGER</span></h1>
+  <p>2ショット・手売り・握手・ハピカを日付ごとに記録</p>
+</header>
+
+<nav class="tabs" id="tabNav"></nav>
+
+<main id="app"></main>
+
+<script>
+/* =========================================================
+   データ定義
+========================================================= */
+const STORAGE_KEY = 'oshiRecordAppData_v1';
+
+const TYPE_CONFIG = {
+  '2shot': {
+    label: '2ショット',
+    hasSeconds: true,
+    defaultPrice: 1500,
+    defaultSeconds: 30,
+    pricePresets: [1500,1720,1200,2000],
+    secondsPresets: [30,60]
+  },
+  'tenuri': {
+    label: '手売り',
+    hasSeconds: true,
+    defaultPrice: 6000,
+    defaultSeconds: 120,
+    pricePresets: [],
+    secondsPresets: []
+  },
+  'akushu': {
+    label: '握手',
+    hasSeconds: true,
+    defaultPrice: 1000,
+    defaultSeconds: 10,
+    pricePresets: [],
+    secondsPresets: []
+  },
+  'hapica': {
+    label: 'ハピカ',
+    hasSeconds: false,
+    hasCategory: true,
+    defaultPrice: 500,
+    pricePresets: [],
+    categories: { nekomimi: '猫耳', metsumuri: '目つむり', other: 'その他' }
+  }
+};
+const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
+
+/* =========================================================
+   ストレージ
+========================================================= */
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  }catch(e){
+    console.error('load error', e);
+    return [];
+  }
+}
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  }catch(e){
+    alert('保存に失敗しました。ブラウザのストレージが利用できない可能性があります。');
+    console.error(e);
+  }
+}
+
+let records = loadData();
+
+function uid(){
+  return 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
+}
+
+/* =========================================================
+   状態
+========================================================= */
+const today = new Date();
+const state = {
+  tab: '2shot',
+  cal: {}, // type -> {y,m}
+  selectedDate: {}, // type -> 'YYYY-MM-DD'
+  editingId: {}, // type -> id or null
+};
+TYPE_ORDER.forEach(t=>{
+  state.cal[t] = { y: today.getFullYear(), m: today.getMonth() };
+  state.selectedDate[t] = null;
+  state.editingId[t] = null;
+});
+
+const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
+
+/* =========================================================
+   ユーティリティ
+========================================================= */
+function pad2(n){ return n < 10 ? '0'+n : ''+n; }
+function toDateStr(y,m,d){ return y+'-'+pad2(m+1)+'-'+pad2(d); }
+function formatYen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function formatSeconds(sec){
+  sec = Math.round(sec);
+  const m = Math.floor(sec/60);
+  const s = sec%60;
+  if(m===0) return sec + '秒';
+  return m + '分' + (s>0 ? s+'秒' : '') + '（' + sec + '秒）';
+}
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* =========================================================
+   ナビゲーション描画
+========================================================= */
+function renderNav(){
+  const nav = document.getElementById('tabNav');
+  const tabs = [
+    ...TYPE_ORDER.map(t => ({ key:t, label: TYPE_CONFIG[t].label })),
+    { key:'agg', label:'集計' },
+    { key:'data', label:'データ管理' }
+  ];
+  nav.innerHTML = tabs.map(t =>
+    `<button data-tab="${t.key}" class="${state.tab===t.key?'active':''}">${t.label}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.tab = btn.dataset.tab;
+      renderNav();
+      renderMain();
+    });
+  });
+}
+
+/* =========================================================
+   メイン描画振り分け
+========================================================= */
+function renderMain(){
+  const app = document.getElementById('app');
+  if(TYPE_ORDER.includes(state.tab)){
+    app.innerHTML = renderRecordTabHtml(state.tab);
+    attachRecordTabEvents(state.tab);
+  }else if(state.tab === 'agg'){
+    app.innerHTML = renderAggTabHtml();
+    attachAggEvents();
+  }else if(state.tab === 'data'){
+    app.innerHTML = renderDataTabHtml();
+    attachDataEvents();
+  }
+}
+
+/* =========================================================
+   記録タブ（2ショット/手売り/握手/ハピカ 共通）
+========================================================= */
+function getEntriesForDate(type, dateStr){
+  return records.filter(r => r.type===type && r.date===dateStr);
+}
+function getLastSettingsForDate(type, dateStr){
+  const list = getEntriesForDate(type, dateStr);
+  if(list.length===0) return null;
+  return list[list.length-1];
+}
+
+function renderRecordTabHtml(type){
+  const cfg = TYPE_CONFIG[type];
+  const cal = state.cal[type];
+  const selDate = state.selectedDate[type];
+
+  return `
+    <div class="card">
+      <h2>${cfg.label} — カレンダー</h2>
+      ${renderCalendarHtml(type, cal.y, cal.m)}
+    </div>
+    <div class="card">
+      ${selDate ? renderDayPanelHtml(type, selDate) : '<p class="empty-msg">カレンダーの日付をタップすると、記録の追加・編集ができます。</p>'}
+    </div>
+  `;
+}
+
+function renderCalendarHtml(type, y, m){
+  const cfg = TYPE_CONFIG[type];
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayStr = toDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+  const selDate = state.selectedDate[type];
+
+  let cells = [];
+  for(let i=0;i<startDow;i++) cells.push('<td class="empty"></td>');
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = toDateStr(y,m,d);
+    const dow = new Date(y,m,d).getDay();
+    const entries = getEntriesForDate(type, dateStr);
+    const count = entries.reduce((s,e)=>s+Number(e.count||0),0);
+    let cls = [];
+    if(dow===0) cls.push('sun');
+    if(dow===6) cls.push('sat');
+    if(dateStr===todayStr) cls.push('today');
+    if(dateStr===selDate) cls.push('selected');
+    cells.push(`<td class="${cls.join(' ')}" data-date="${dateStr}">
+        <span class="d">${d}</span>
+        ${count>0 ? `<span class="badge">${count}枚</span>` : ''}
+      </td>`);
+  }
+  // pad trailing
+  while(cells.length % 7 !== 0) cells.push('<td class="empty"></td>');
+
+  let rows = '';
+  for(let i=0;i<cells.length;i+=7){
+    rows += '<tr>' + cells.slice(i,i+7).join('') + '</tr>';
+  }
+
+  const monthLabel = y + '年 ' + (m+1) + '月';
+
+  return `
+    <div class="cal-header">
+      <button data-cal-nav="prev" data-type="${type}">＜</button>
+      <span class="month-label">${monthLabel}</span>
+      <button data-cal-nav="next" data-type="${type}">＞</button>
+    </div>
+    <table class="calendar">
+      <thead><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderDayPanelHtml(type, dateStr){
+  const cfg = TYPE_CONFIG[type];
+  const entries = getEntriesForDate(type, dateStr);
+  const editingId = state.editingId[type];
+  const editingEntry = editingId ? records.find(r=>r.id===editingId) : null;
+
+  const lastSetting = getLastSettingsForDate(type, dateStr);
+  const defaultPrice = editingEntry ? editingEntry.unitPrice
+    : (lastSetting ? lastSetting.unitPrice : cfg.defaultPrice);
+  const defaultSeconds = cfg.hasSeconds ? (editingEntry ? editingEntry.unitSeconds
+    : (lastSetting ? lastSetting.unitSeconds : cfg.defaultSeconds)) : null;
+  const defaultLocation = editingEntry ? editingEntry.location : (lastSetting ? lastSetting.location : '');
+  const defaultEvent = editingEntry ? editingEntry.event : (lastSetting ? lastSetting.event : '');
+
+  let entriesHtml = '';
+  if(entries.length===0){
+    entriesHtml = '<p class="empty-msg">この日の記録はまだありません。</p>';
+  }else{
+    entriesHtml = entries.map(e=>{
+      const money = Number(e.count) * Number(e.unitPrice);
+      let line2 = '';
+      if(cfg.hasSeconds){
+        line2 = `${e.unitPrice}円/枚 ・ ${e.unitSeconds}秒/枚`;
+      }else if(cfg.hasCategory){
+        const catLabel = cfg.categories[e.hapicaCategory] || 'その他';
+        line2 = `<span class="cat-tag cat-${e.hapicaCategory}">${catLabel}</span>${e.unitPrice}円/枚`;
+      }
+      return `
+        <div class="entry-row">
+          <div class="info">
+            <div class="line1">${escapeHtml(e.location||'（場所未記入）')} ／ ${escapeHtml(e.event||'（イベント未記入）')} ・ ${e.count}枚</div>
+            <div class="line2">${line2}</div>
+          </div>
+          <div class="money">${formatYen(money)}</div>
+          <div class="actions">
+            <button data-edit="${e.id}" data-type="${type}">編集</button>
+            <button data-delete="${e.id}" data-type="${type}">削除</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const presetPriceHtml = cfg.pricePresets && cfg.pricePresets.length ? `
+    <div class="preset-row">
+      ${cfg.pricePresets.map(p=>`<button type="button" data-preset-price="${p}" class="${Number(defaultPrice)===p?'active':''}">${p}円</button>`).join('')}
+    </div>` : '';
+  const presetSecondsHtml = cfg.secondsPresets && cfg.secondsPresets.length ? `
+    <div class="preset-row">
+      ${cfg.secondsPresets.map(s=>`<button type="button" data-preset-seconds="${s}" class="${Number(defaultSeconds)===s?'active':''}">${s}秒</button>`).join('')}
+    </div>` : '';
+
+  const categoryHtml = cfg.hasCategory ? `
+    <label>カテゴリー
+      <select name="hapicaCategory">
+        ${Object.entries(cfg.categories).map(([k,v])=>
+          `<option value="${k}" ${editingEntry && editingEntry.hapicaCategory===k ? 'selected':''}>${v}</option>`
+        ).join('')}
+      </select>
+    </label>` : '';
+
+  const secondsFieldHtml = cfg.hasSeconds ? `
+    <label>1枚あたりの秒数
+      <input type="number" name="unitSeconds" min="0" step="1" value="${defaultSeconds}">
+    </label>` : '';
+
+  return `
+    <div class="day-panel">
+      <div class="date-title">${dateStr} の記録（${cfg.label}）</div>
+      ${entriesHtml}
+      <form class="entry-form" data-type="${type}" data-date="${dateStr}" data-editing="${editingId||''}">
+        <h3>${editingEntry ? '記録を編集' : '記録を追加'}</h3>
+        <div class="row">
+          <label>場所
+            <input type="text" name="location" value="${escapeHtml(defaultLocation)}" placeholder="例：〇〇ホール">
+          </label>
+          <label>イベント名
+            <input type="text" name="event" value="${escapeHtml(defaultEvent)}" placeholder="例：〇〇単独握手会">
+          </label>
+        </div>
+        <div class="row">
+          <label>枚数
+            <input type="number" name="count" min="1" step="1" value="${editingEntry ? editingEntry.count : 1}">
+          </label>
+          <label>1枚あたりの金額（円）
+            <input type="number" name="unitPrice" min="0" step="1" value="${defaultPrice}">
+          </label>
+          ${cfg.hasSeconds ? '' : ''}
+        </div>
+        ${presetPriceHtml}
+        ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
+        ${categoryHtml ? `<div class="row">${categoryHtml}</div>` : ''}
+        <button type="submit" class="submit-btn">${editingEntry ? '更新する' : '追加する'}</button>
+        ${editingEntry ? '<button type="button" class="cancel-edit" data-cancel-edit data-type="'+type+'">編集をやめる</button>' : ''}
+      </form>
+    </div>
+  `;
+}
+
+function attachRecordTabEvents(type){
+  const app = document.getElementById('app');
+
+  // カレンダー月移動
+  app.querySelectorAll('[data-cal-nav]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const dir = btn.dataset.calNav;
+      const cal = state.cal[type];
+      let ny = cal.y, nm = cal.m + (dir==='next' ? 1 : -1);
+      if(nm < 0){ nm = 11; ny--; }
+      if(nm > 11){ nm = 0; ny++; }
+      state.cal[type] = { y: ny, m: nm };
+      renderMain();
+    });
+  });
+
+  // 日付選択
+  app.querySelectorAll('td[data-date]').forEach(td=>{
+    td.addEventListener('click', ()=>{
+      state.selectedDate[type] = td.dataset.date;
+      state.editingId[type] = null;
+      renderMain();
+    });
+  });
+
+  // 編集ボタン
+  app.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.editingId[type] = btn.dataset.edit;
+      renderMain();
+    });
+  });
+
+  // 削除ボタン
+  app.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!confirm('この記録を削除しますか？')) return;
+      records = records.filter(r=>r.id!==btn.dataset.delete);
+      saveData();
+      renderMain();
+    });
+  });
+
+  // 編集キャンセル
+  app.querySelectorAll('[data-cancel-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.editingId[type] = null;
+      renderMain();
+    });
+  });
+
+  // プリセットボタン（金額）－ 画面全体は再描画せず、値と選択状態だけ更新
+  app.querySelectorAll('[data-preset-price]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      form.querySelector('[name=unitPrice]').value = btn.dataset.presetPrice;
+      btn.parentElement.querySelectorAll('[data-preset-price]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+  // プリセットボタン（秒数）
+  app.querySelectorAll('[data-preset-seconds]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      form.querySelector('[name=unitSeconds]').value = btn.dataset.presetSeconds;
+      btn.parentElement.querySelectorAll('[data-preset-seconds]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // フォーム送信
+  const form = app.querySelector('form.entry-form');
+  if(form){
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData(form);
+      const cfg = TYPE_CONFIG[type];
+      const editingId = form.dataset.editing || null;
+
+      const entry = {
+        id: editingId || uid(),
+        type: type,
+        date: form.dataset.date,
+        location: (fd.get('location')||'').trim(),
+        event: (fd.get('event')||'').trim(),
+        count: Number(fd.get('count')) || 0,
+        unitPrice: Number(fd.get('unitPrice')) || 0,
+      };
+      if(cfg.hasSeconds){
+        entry.unitSeconds = Number(fd.get('unitSeconds')) || 0;
+      }
+      if(cfg.hasCategory){
+        entry.hapicaCategory = fd.get('hapicaCategory') || 'other';
+      }
+
+      if(editingId){
+        const idx = records.findIndex(r=>r.id===editingId);
+        if(idx>=0) records[idx] = entry;
+      }else{
+        records.push(entry);
+      }
+      saveData();
+      state.editingId[type] = null;
+      renderMain();
+    });
+  }
+}
+
+/* =========================================================
+   集計タブ
+========================================================= */
+function renderAggTabHtml(){
+  const years = Array.from(new Set(records.map(r=>r.date.slice(0,4)))).sort();
+  if(years.length===0) years.push(String(today.getFullYear()));
+
+  const yearOptions = years.map(y=>`<option value="${y}" ${Number(y)===aggState.y?'selected':''}>${y}年</option>`).join('');
+  const monthOptions = Array.from({length:12},(_,i)=>i+1).map(m=>
+    `<option value="${m}" ${m===aggState.m?'selected':''}>${m}月</option>`
+  ).join('');
+
+  const filtered = getFilteredRecords();
+  const totals = computeTotals(filtered);
+
+  return `
+    <div class="card">
+      <h2>集計</h2>
+      <div class="agg-controls">
+        <select id="aggMode">
+          <option value="month" ${aggState.mode==='month'?'selected':''}>月別</option>
+          <option value="year" ${aggState.mode==='year'?'selected':''}>年別</option>
+          <option value="all" ${aggState.mode==='all'?'selected':''}>合計（全期間）</option>
+        </select>
+        <select id="aggYear" style="${aggState.mode==='all'?'display:none':''}">${yearOptions}</select>
+        <select id="aggMonth" style="${aggState.mode==='month'?'':'display:none'}">${monthOptions}</select>
+      </div>
+
+      <h3>2ショット・手売り・握手（合計）</h3>
+      <div class="totals-grid">
+        <div class="total-box time"><div class="label">合計秒数</div><div class="value">${formatSeconds(totals.shotSeconds)}</div></div>
+        <div class="total-box money"><div class="label">合計金額</div><div class="value">${formatYen(totals.shotMoney)}</div></div>
+      </div>
+
+      <h3>ハピカ</h3>
+      <div class="totals-grid">
+        <div class="total-box count"><div class="label">合計枚数</div><div class="value">${totals.hapicaCount}枚</div></div>
+        <div class="total-box money"><div class="label">合計金額</div><div class="value">${formatYen(totals.hapicaMoney)}</div></div>
+      </div>
+
+      <h3>種類別 内訳</h3>
+      <table class="breakdown">
+        <thead><tr><th>種類</th><th>枚数</th><th>秒数</th><th>金額</th></tr></thead>
+        <tbody>
+          ${TYPE_ORDER.map(t=>{
+            const cfg = TYPE_CONFIG[t];
+            const list = filtered.filter(r=>r.type===t);
+            const cnt = list.reduce((s,e)=>s+Number(e.count||0),0);
+            const money = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0),0);
+            const sec = cfg.hasSeconds ? list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitSeconds||0),0) : null;
+            return `<tr><td>${cfg.label}</td><td>${cnt}枚</td><td>${sec!==null ? formatSeconds(sec) : '－'}</td><td>${formatYen(money)}</td></tr>`;
+          }).join('')}
+          <tr style="font-weight:800;"><td>総合計</td><td>${totals.allCount}枚</td><td>${formatSeconds(totals.shotSeconds)}</td><td>${formatYen(totals.shotMoney + totals.hapicaMoney)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function getFilteredRecords(){
+  return records.filter(r=>{
+    const y = Number(r.date.slice(0,4));
+    const m = Number(r.date.slice(5,7));
+    if(aggState.mode==='all') return true;
+    if(aggState.mode==='year') return y===aggState.y;
+    if(aggState.mode==='month') return y===aggState.y && m===aggState.m;
+    return true;
+  });
+}
+
+function computeTotals(list){
+  const shotTypes = ['2shot','tenuri','akushu'];
+  let shotSeconds=0, shotMoney=0, hapicaCount=0, hapicaMoney=0, allCount=0;
+  list.forEach(r=>{
+    allCount += Number(r.count||0);
+    if(shotTypes.includes(r.type)){
+      shotSeconds += Number(r.count||0) * Number(r.unitSeconds||0);
+      shotMoney += Number(r.count||0) * Number(r.unitPrice||0);
+    }else if(r.type==='hapica'){
+      hapicaCount += Number(r.count||0);
+      hapicaMoney += Number(r.count||0) * Number(r.unitPrice||0);
+    }
+  });
+  return { shotSeconds, shotMoney, hapicaCount, hapicaMoney, allCount };
+}
+
+function attachAggEvents(){
+  const app = document.getElementById('app');
+  const modeSel = app.querySelector('#aggMode');
+  const yearSel = app.querySelector('#aggYear');
+  const monthSel = app.querySelector('#aggMonth');
+  modeSel.addEventListener('change', ()=>{ aggState.mode = modeSel.value; renderMain(); });
+  yearSel.addEventListener('change', ()=>{ aggState.y = Number(yearSel.value); renderMain(); });
+  if(monthSel) monthSel.addEventListener('change', ()=>{ aggState.m = Number(monthSel.value); renderMain(); });
+}
+
+/* =========================================================
+   データ管理タブ（エクスポート／インポート）
+========================================================= */
+function renderDataTabHtml(){
+  return `
+    <div class="card datamgmt">
+      <h2>データ管理</h2>
+      <p class="hint">
+        現在 ${records.length} 件の記録が保存されています。<br>
+        エクスポートしたファイルは大切に保管してください。バックアップや機種変更の際はインポートで復元できます。<br>
+        ※データはこの端末のブラウザ内（localStorage）に保存されます。ブラウザのデータを消去すると記録も消えるため、こまめなエクスポートをおすすめします。
+      </p>
+      <div class="btn-row">
+        <button id="exportBtn">エクスポート（JSONで保存）</button>
+        <label class="file-btn">インポート（追加）
+          <input type="file" id="importAddInput" accept="application/json">
+        </label>
+        <label class="file-btn">インポート（全置き換え）
+          <input type="file" id="importReplaceInput" accept="application/json">
+        </label>
+        <button id="clearBtn" class="danger">全データを削除</button>
+      </div>
+    </div>
+  `;
+}
+
+function attachDataEvents(){
+  const app = document.getElementById('app');
+
+  app.querySelector('#exportBtn').addEventListener('click', ()=>{
+    const payload = {
+      appName: 'oshi-record-app',
+      exportedAt: new Date().toISOString(),
+      records: records
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date();
+    const fname = 'oshi-record-' + ts.getFullYear() + pad2(ts.getMonth()+1) + pad2(ts.getDate()) + '.json';
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  app.querySelector('#importAddInput').addEventListener('change', (ev)=>{
+    handleImportFile(ev.target.files[0], 'add');
+    ev.target.value = '';
+  });
+  app.querySelector('#importReplaceInput').addEventListener('change', (ev)=>{
+    handleImportFile(ev.target.files[0], 'replace');
+    ev.target.value = '';
+  });
+
+  app.querySelector('#clearBtn').addEventListener('click', ()=>{
+    if(!confirm('本当にすべての記録を削除しますか？この操作は取り消せません。')) return;
+    records = [];
+    saveData();
+    renderMain();
+  });
+}
+
+function handleImportFile(file, mode){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.records;
+      if(!Array.isArray(incoming)) throw new Error('形式が不正です');
+
+      // 最低限のバリデーション
+      const cleaned = incoming.filter(r => r && r.type && r.date && TYPE_CONFIG[r.type]).map(r=>({
+        id: r.id || uid(),
+        type: r.type,
+        date: r.date,
+        location: r.location || '',
+        event: r.event || '',
+        count: Number(r.count) || 0,
+        unitPrice: Number(r.unitPrice) || 0,
+        unitSeconds: r.unitSeconds!==undefined ? Number(r.unitSeconds) : undefined,
+        hapicaCategory: r.hapicaCategory || undefined
+      }));
+
+      if(mode==='replace'){
+        if(!confirm('現在のデータを削除して、インポートしたデータに置き換えます。よろしいですか？')) return;
+        records = cleaned;
+      }else{
+        // 追加：同じidが既にあれば上書き、なければ追加
+        cleaned.forEach(nr=>{
+          const idx = records.findIndex(r=>r.id===nr.id);
+          if(idx>=0) records[idx] = nr; else records.push(nr);
+        });
+      }
+      saveData();
+      renderMain();
+      alert('インポートが完了しました（' + cleaned.length + '件）。');
+    }catch(err){
+      console.error(err);
+      alert('インポートに失敗しました。ファイルの形式をご確認ください。');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* =========================================================
+   初期化
+========================================================= */
+renderNav();
+renderMain();
+</script>
+
+</body>
+</html>
