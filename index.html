@@ -14,6 +14,7 @@
     --stamp-red:#b23a48;
     --teal:#2f6f6a;
     --mustard:#c98a2c;
+    --purple:#6a3fa0;
     --card:#fbfaf5;
     --shadow: 0 1px 2px rgba(36,42,59,0.08), 0 4px 10px rgba(36,42,59,0.06);
   }
@@ -120,7 +121,7 @@ table.calendar td.selected{background:#e7e2cd;}
 table.calendar td .d{font-variant-numeric:tabular-nums;color:var(–ink-soft);}
 table.calendar td .badge{
 display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:#fff;
-background:var(–teal);border-radius:6px;padding:1px 4px;text-align:center;
+background:var(–purple);border-radius:6px;padding:1px 4px;text-align:center;
 font-variant-numeric:tabular-nums;
 }
 table.calendar td.sun .d{color:var(–stamp-red);}
@@ -160,6 +161,17 @@ border:1px solid var(–paper-line);background:#fff;border-radius:20px;padding:5
 background:var(–ink);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
 }
 .cancel-edit{background:none;border:none;color:var(–ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;margin-left:10px;}
+
+.advance-toggle-btn{
+background:#fff;color:var(–purple);border:1.5px solid var(–purple);border-radius:20px;
+padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;
+}
+.advance-toggle-btn.active{background:var(–purple);color:#fff;}
+.advance-block{
+margin-top:8px;padding:10px;border:1px dashed var(–purple);border-radius:10px;background:#f7f2fb;
+}
+.advance-block .preset-row button[data-advance-fee].active{background:var(–purple);color:#fff;border-color:var(–purple);}
+.cat-tag.cat-advance{background:var(–purple);}
 
 .agg-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
 .agg-controls select,.agg-controls input{padding:7px 8px;border-radius:8px;border:1px solid var(–paper-line);font-size:13px;}
@@ -215,7 +227,10 @@ const TYPE_CONFIG = {
     defaultPrice: 1500,
     defaultSeconds: 30,
     pricePresets: [1500,1720,1200,2000],
-    secondsPresets: [30,60]
+    secondsPresets: [30,60],
+    hasAdvance: true,
+    advanceFeeOptions: [220,110],
+    defaultAdvanceFee: 220
   },
   'tenuri': {
     label: '手売り',
@@ -391,7 +406,7 @@ function renderCalendarHtml(type, y, m){
     const dateStr = toDateStr(y,m,d);
     const dow = new Date(y,m,d).getDay();
     const entries = getEntriesForDate(type, dateStr);
-    const count = entries.reduce((s,e)=>s+Number(e.count||0),0);
+    const count = entries.reduce((s,e)=>s+Number(e.count||0)+((e.isAdvance && e.advanceCount)?Number(e.advanceCount):0),0);
     let cls = [];
     if(dow===0) cls.push('sun');
     if(dow===6) cls.push('sat');
@@ -444,7 +459,8 @@ function renderDayPanelHtml(type, dateStr){
     entriesHtml = '<p class="empty-msg">この日の記録はまだありません。</p>';
   }else{
     entriesHtml = entries.map(e=>{
-      const money = Number(e.count) * Number(e.unitPrice);
+      const hasAdv = cfg.hasAdvance && e.isAdvance && Number(e.advanceCount) > 0;
+      const money = Number(e.count) * Number(e.unitPrice) + (hasAdv ? Number(e.advanceCount) * Number(e.advancePrice) : 0);
       let line2 = '';
       if(cfg.hasSeconds){
         line2 = `${e.unitPrice}円/枚 ・ ${e.unitSeconds}秒/枚`;
@@ -452,11 +468,15 @@ function renderDayPanelHtml(type, dateStr){
         const catLabel = cfg.categories[e.hapicaCategory] || 'その他';
         line2 = `<span class="cat-tag cat-${e.hapicaCategory}">${catLabel}</span>${e.unitPrice}円/枚`;
       }
+      const advLine = hasAdv
+        ? `<div class="line2"><span class="cat-tag cat-advance">前売り</span>${e.advanceCount}枚 ・ ${e.advancePrice}円/枚（手数料+${e.advanceFee}円込み）</div>`
+        : '';
       return `
         <div class="entry-row">
           <div class="info">
             <div class="line1">${escapeHtml(e.location||'（場所未記入）')} ／ ${escapeHtml(e.event||'（イベント未記入）')} ・ ${e.count}枚</div>
             <div class="line2">${line2}</div>
+            ${advLine}
           </div>
           <div class="money">${formatYen(money)}</div>
           <div class="actions">
@@ -491,6 +511,38 @@ function renderDayPanelHtml(type, dateStr){
       <input type="number" name="unitSeconds" min="0" step="1" value="${defaultSeconds}">
     </label>` : '';
 
+  let advanceHtml = '';
+  if(cfg.hasAdvance){
+    const isAdvance = editingEntry ? !!editingEntry.isAdvance : false;
+    const advanceFee = editingEntry && editingEntry.advanceFee ? editingEntry.advanceFee : cfg.defaultAdvanceFee;
+    const advanceCount = editingEntry && editingEntry.advanceCount ? editingEntry.advanceCount : 1;
+    const advancePrice = editingEntry && editingEntry.advancePrice
+      ? editingEntry.advancePrice
+      : (Number(defaultPrice) + Number(advanceFee));
+    advanceHtml = `
+      <div class="row">
+        <button type="button" class="advance-toggle-btn ${isAdvance?'active':''}" data-advance-toggle>${isAdvance ? '前売り：ON' : '前売り：OFF'}</button>
+      </div>
+      <input type="hidden" name="isAdvance" value="${isAdvance ? 1 : 0}">
+      <div class="advance-block" data-advance-block style="${isAdvance ? '' : 'display:none;'}">
+        <div class="row">
+          <label>前売り枚数
+            <input type="number" name="advanceCount" min="0" step="1" value="${advanceCount}">
+          </label>
+          <label>前売り単価（円）
+            <input type="number" name="advancePrice" min="0" step="1" value="${advancePrice}">
+          </label>
+        </div>
+        <div class="preset-row">
+          ${cfg.advanceFeeOptions.map(f=>
+            `<button type="button" data-advance-fee="${f}" class="${Number(advanceFee)===f?'active':''}">手数料+${f}円</button>`
+          ).join('')}
+        </div>
+        <p class="hint">前売り単価には手数料込みの金額を入力してください（デフォルトは基本単価＋選択した手数料）。</p>
+      </div>
+    `;
+  }
+
   return `
     <div class="day-panel">
       <div class="date-title">${dateStr} の記録（${cfg.label}）</div>
@@ -517,6 +569,7 @@ function renderDayPanelHtml(type, dateStr){
         ${presetPriceHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
         ${categoryHtml ? `<div class="row">${categoryHtml}</div>` : ''}
+        ${advanceHtml}
         <button type="submit" class="submit-btn">${editingEntry ? '更新する' : '追加する'}</button>
         ${editingEntry ? '<button type="button" class="cancel-edit" data-cancel-edit data-type="'+type+'">編集をやめる</button>' : ''}
       </form>
@@ -594,6 +647,50 @@ function attachRecordTabEvents(type){
     });
   });
 
+  // 前売りトグルボタン
+  app.querySelectorAll('[data-advance-toggle]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      const hidden = form.querySelector('[name=isAdvance]');
+      const block = form.querySelector('[data-advance-block]');
+      const isNowOn = hidden.value !== '1';
+      hidden.value = isNowOn ? '1' : '0';
+      btn.classList.toggle('active', isNowOn);
+      btn.textContent = isNowOn ? '前売り：ON' : '前売り：OFF';
+      block.style.display = isNowOn ? '' : 'none';
+      if(isNowOn){
+        // ONにした時、単価＋デフォルト手数料を前売り単価にセット
+        const cfg = TYPE_CONFIG[type];
+        const feeBtn = block.querySelector('[data-advance-fee].active') || block.querySelector('[data-advance-fee]');
+        const fee = feeBtn ? Number(feeBtn.dataset.advanceFee) : cfg.defaultAdvanceFee;
+        const basePrice = Number(form.querySelector('[name=unitPrice]').value) || cfg.defaultPrice;
+        const advPriceField = form.querySelector('[name=advancePrice]');
+        if(advPriceField && !advPriceField.dataset.touched){
+          advPriceField.value = basePrice + fee;
+        }
+      }
+    });
+  });
+
+  // 前売り手数料プリセットボタン
+  app.querySelectorAll('[data-advance-fee]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      const cfg = TYPE_CONFIG[type];
+      const basePrice = Number(form.querySelector('[name=unitPrice]').value) || cfg.defaultPrice;
+      const fee = Number(btn.dataset.advanceFee);
+      form.querySelector('[name=advancePrice]').value = basePrice + fee;
+      btn.parentElement.querySelectorAll('[data-advance-fee]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // 前売り単価を手動で編集したら自動上書きしない
+  const advancePriceField = app.querySelector('[name=advancePrice]');
+  if(advancePriceField){
+    advancePriceField.addEventListener('input', ()=>{ advancePriceField.dataset.touched = '1'; });
+  }
+
   // フォーム送信
   const form = app.querySelector('form.entry-form');
   if(form){
@@ -617,6 +714,20 @@ function attachRecordTabEvents(type){
       }
       if(cfg.hasCategory){
         entry.hapicaCategory = fd.get('hapicaCategory') || 'other';
+      }
+      if(cfg.hasAdvance){
+        const isAdvance = fd.get('isAdvance') === '1';
+        entry.isAdvance = isAdvance;
+        if(isAdvance){
+          entry.advanceCount = Number(fd.get('advanceCount')) || 0;
+          entry.advancePrice = Number(fd.get('advancePrice')) || 0;
+          const feeBtnActive = form.querySelector('[data-advance-fee].active');
+          entry.advanceFee = feeBtnActive ? Number(feeBtnActive.dataset.advanceFee) : cfg.defaultAdvanceFee;
+        }else{
+          entry.advanceCount = 0;
+          entry.advancePrice = 0;
+          entry.advanceFee = undefined;
+        }
       }
 
       if(editingId){
@@ -679,9 +790,11 @@ function renderAggTabHtml(){
           ${TYPE_ORDER.map(t=>{
             const cfg = TYPE_CONFIG[t];
             const list = filtered.filter(r=>r.type===t);
-            const cnt = list.reduce((s,e)=>s+Number(e.count||0),0);
-            const money = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0),0);
-            const sec = cfg.hasSeconds ? list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitSeconds||0),0) : null;
+            const advCntOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
+            const advMoneyOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount)*Number(e.advancePrice||0) : 0;
+            const cnt = list.reduce((s,e)=>s+Number(e.count||0)+advCntOf(e),0);
+            const money = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e),0);
+            const sec = cfg.hasSeconds ? list.reduce((s,e)=>s+(Number(e.count||0)+advCntOf(e))*Number(e.unitSeconds||0),0) : null;
             return `<tr><td>${cfg.label}</td><td>${cnt}枚</td><td>${sec!==null ? formatSeconds(sec) : '－'}</td><td>${formatYen(money)}</td></tr>`;
           }).join('')}
           <tr style="font-weight:800;"><td>総合計</td><td>${totals.allCount}枚</td><td>${formatSeconds(totals.shotSeconds)}</td><td>${formatYen(totals.shotMoney + totals.hapicaMoney)}</td></tr>
@@ -706,10 +819,12 @@ function computeTotals(list){
   const shotTypes = ['2shot','tenuri','akushu'];
   let shotSeconds=0, shotMoney=0, hapicaCount=0, hapicaMoney=0, allCount=0;
   list.forEach(r=>{
-    allCount += Number(r.count||0);
+    const advCount = (r.isAdvance && r.advanceCount) ? Number(r.advanceCount) : 0;
+    const advMoney = (r.isAdvance && r.advanceCount) ? Number(r.advanceCount) * Number(r.advancePrice||0) : 0;
+    allCount += Number(r.count||0) + advCount;
     if(shotTypes.includes(r.type)){
-      shotSeconds += Number(r.count||0) * Number(r.unitSeconds||0);
-      shotMoney += Number(r.count||0) * Number(r.unitPrice||0);
+      shotSeconds += (Number(r.count||0) + advCount) * Number(r.unitSeconds||0);
+      shotMoney += Number(r.count||0) * Number(r.unitPrice||0) + advMoney;
     }else if(r.type==='hapica'){
       hapicaCount += Number(r.count||0);
       hapicaMoney += Number(r.count||0) * Number(r.unitPrice||0);
