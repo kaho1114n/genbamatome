@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -56,152 +55,151 @@
   }
   header.top p{margin:0;font-size:11.5px;color:#b7bccb;}
 
-nav.tabs{
-display:flex;
-overflow-x:auto;
-gap:6px;
-padding:10px 12px 0;
-background:var(–ink);
-position:sticky;
-top:62px;
-z-index:19;
-}
-nav.tabs button{
-flex:0 0 auto;
-background:#333a52;
-color:#cfd3e2;
-border:none;
-padding:9px 14px;
-border-radius:10px 10px 0 0;
-font-size:13px;
-cursor:pointer;
-white-space:nowrap;
-}
-nav.tabs button.active{
-background:var(–paper);
-color:var(–ink);
-font-weight:700;
-}
+  nav.tabs{
+    display:flex;
+    overflow-x:auto;
+    gap:6px;
+    padding:10px 12px 0;
+    background:var(--ink);
+    position:sticky;
+    top:62px;
+    z-index:19;
+  }
+  nav.tabs button{
+    flex:0 0 auto;
+    background:#333a52;
+    color:#cfd3e2;
+    border:none;
+    padding:9px 14px;
+    border-radius:10px 10px 0 0;
+    font-size:13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    background:var(--paper);
+    color:var(--ink);
+    font-weight:700;
+  }
 
-main{max-width:760px;margin:0 auto;padding:16px 12px 60px;}
+  main{max-width:760px;margin:0 auto;padding:16px 12px 60px;}
 
-.card{
-background:var(–card);
-border:1px solid var(–paper-line);
-border-radius:12px;
-padding:14px 14px 16px;
-margin-bottom:14px;
-box-shadow:var(–shadow);
-}
-.card h2{margin:0 0 10px;font-size:15px;color:var(–ink);}
-.card h3{margin:0 0 8px;font-size:13.5px;color:var(–ink-soft);font-weight:700;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:12px;
+    padding:14px 14px 16px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{margin:0 0 10px;font-size:15px;color:var(--ink);}
+  .card h3{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);font-weight:700;}
 
-.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-.cal-header .month-label{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;}
-.cal-header button{
-background:none;border:1px solid var(–paper-line);border-radius:8px;
-width:32px;height:32px;font-size:15px;color:var(–ink);cursor:pointer;
-}
-table.calendar{width:100%;border-collapse:collapse;table-layout:fixed;}
-table.calendar th{
-font-size:11px;color:var(–ink-soft);font-weight:600;padding:4px 0;
-}
-table.calendar td{
-height:56px;
-vertical-align:top;
-border:1px solid var(–paper-line);
-padding:3px 4px;
-cursor:pointer;
-font-size:12px;
-position:relative;
-}
-table.calendar td.empty{background:repeating-linear-gradient(45deg,#eeece1,#eeece1 4px,#f2f0e6 4px,#f2f0e6 8px);cursor:default;}
-table.calendar td.today{outline:2px solid var(–mustard);outline-offset:-2px;}
-table.calendar td.selected{background:#e7e2cd;}
-table.calendar td .d{font-variant-numeric:tabular-nums;color:var(–ink-soft);}
-table.calendar td .badge{
-display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:#fff;
-background:var(–purple);border-radius:6px;padding:1px 4px;text-align:center;
-font-variant-numeric:tabular-nums;
-}
-table.calendar td.sun .d{color:var(–stamp-red);}
-table.calendar td.sat .d{color:#2f5da0;}
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .cal-header .month-label{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;}
+  .cal-header button{
+    background:none;border:1px solid var(--paper-line);border-radius:8px;
+    width:32px;height:32px;font-size:15px;color:var(--ink);cursor:pointer;
+  }
+  table.calendar{width:100%;border-collapse:collapse;table-layout:fixed;}
+  table.calendar th{
+    font-size:11px;color:var(--ink-soft);font-weight:600;padding:4px 0;
+  }
+  table.calendar td{
+    height:56px;
+    vertical-align:top;
+    border:1px solid var(--paper-line);
+    padding:3px 4px;
+    cursor:pointer;
+    font-size:12px;
+    position:relative;
+  }
+  table.calendar td.empty{background:repeating-linear-gradient(45deg,#eeece1,#eeece1 4px,#f2f0e6 4px,#f2f0e6 8px);cursor:default;}
+  table.calendar td.today{outline:2px solid var(--mustard);outline-offset:-2px;}
+  table.calendar td.selected{background:#e7e2cd;}
+  table.calendar td .d{font-variant-numeric:tabular-nums;color:var(--purple);}
+  table.calendar td .badge{
+    display:block;margin-top:3px;font-size:10.5px;font-weight:700;color:#fff;
+    background:var(--purple);border-radius:6px;padding:1px 4px;text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  table.calendar td.sun .d{color:var(--purple);}
+  table.calendar td.sat .d{color:var(--purple);}
 
-.day-panel{border-top:2px dashed var(–paper-line);margin-top:12px;padding-top:12px;}
-.day-panel .date-title{font-weight:700;margin-bottom:8px;font-size:14px;}
+  .day-panel{border-top:2px dashed var(--paper-line);margin-top:12px;padding-top:12px;}
+  .day-panel .date-title{font-weight:700;margin-bottom:8px;font-size:14px;}
 
-.entry-row{
-display:flex;justify-content:space-between;align-items:center;gap:8px;
-background:#fff;border:1px solid var(–paper-line);border-radius:8px;
-padding:8px 10px;margin-bottom:6px;font-size:12.5px;
-}
-.entry-row .info{flex:1;}
-.entry-row .info .line1{font-weight:700;}
-.entry-row .info .line2{color:var(–ink-soft);font-size:11.5px;margin-top:2px;}
-.entry-row .money{font-variant-numeric:tabular-nums;color:var(–stamp-red);font-weight:700;white-space:nowrap;}
-.entry-row .actions{display:flex;gap:4px;}
-.entry-row .actions button{
-border:none;background:var(–paper);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;
-}
+  .entry-row{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    background:#fff;border:1px solid var(--paper-line);border-radius:8px;
+    padding:8px 10px;margin-bottom:6px;font-size:12.5px;
+  }
+  .entry-row .info{flex:1;}
+  .entry-row .info .line1{font-weight:700;}
+  .entry-row .info .line2{color:var(--ink-soft);font-size:11.5px;margin-top:2px;}
+  .entry-row .money{font-variant-numeric:tabular-nums;color:var(--stamp-red);font-weight:700;white-space:nowrap;}
+  .entry-row .actions{display:flex;gap:4px;}
+  .entry-row .actions button{
+    border:none;background:var(--paper);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;
+  }
 
-form.entry-form{margin-top:10px;}
-form.entry-form .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-form.entry-form label{
-display:flex;flex-direction:column;font-size:11px;color:var(–ink-soft);gap:3px;flex:1;min-width:120px;
-}
-form.entry-form input,form.entry-form select{
-font-size:14px;padding:8px 8px;border:1px solid var(–paper-line);border-radius:8px;background:#fff;color:var(–ink);
-}
-.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
-.preset-row button{
-border:1px solid var(–paper-line);background:#fff;border-radius:20px;padding:5px 10px;font-size:11.5px;cursor:pointer;color:var(–ink-soft);
-}
-.preset-row button.active{background:var(–teal);color:#fff;border-color:var(–teal);}
-.submit-btn{
-background:var(–ink);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
-}
-.cancel-edit{background:none;border:none;color:var(–ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;margin-left:10px;}
+  form.entry-form{margin-top:10px;}
+  form.entry-form .row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  form.entry-form label{
+    display:flex;flex-direction:column;font-size:11px;color:var(--ink-soft);gap:3px;flex:1;min-width:120px;
+  }
+  form.entry-form input,form.entry-form select{
+    font-size:14px;padding:8px 8px;border:1px solid var(--paper-line);border-radius:8px;background:#fff;color:var(--ink);
+  }
+  .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+  .preset-row button{
+    border:1px solid var(--paper-line);background:#fff;border-radius:20px;padding:5px 10px;font-size:11.5px;cursor:pointer;color:var(--ink-soft);
+  }
+  .preset-row button.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .submit-btn{
+    background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
+  }
+  .cancel-edit{background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;margin-left:10px;}
 
-.advance-toggle-btn{
-background:#fff;color:var(–purple);border:1.5px solid var(–purple);border-radius:20px;
-padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;
-}
-.advance-toggle-btn.active{background:var(–purple);color:#fff;}
-.advance-block{
-margin-top:8px;padding:10px;border:1px dashed var(–purple);border-radius:10px;background:#f7f2fb;
-}
-.advance-block .preset-row button[data-advance-fee].active{background:var(–purple);color:#fff;border-color:var(–purple);}
-.cat-tag.cat-advance{background:var(–purple);}
+  .advance-toggle-btn{
+    background:#fff;color:var(--purple);border:1.5px solid var(--purple);border-radius:20px;
+    padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer;
+  }
+  .advance-toggle-btn.active{background:var(--purple);color:#fff;}
+  .advance-block{
+    margin-top:8px;padding:10px;border:1px dashed var(--purple);border-radius:10px;background:#f7f2fb;
+  }
+  .advance-block .preset-row button[data-advance-fee].active{background:var(--purple);color:#fff;border-color:var(--purple);}
+  .cat-tag.cat-advance{background:var(--purple);}
 
-.agg-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
-.agg-controls select,.agg-controls input{padding:7px 8px;border-radius:8px;border:1px solid var(–paper-line);font-size:13px;}
-.totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.total-box{background:#fff;border:1px solid var(–paper-line);border-radius:10px;padding:10px 12px;}
-.total-box .label{font-size:11px;color:var(–ink-soft);margin-bottom:4px;}
-.total-box .value{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
-.total-box.money .value{color:var(–stamp-red);}
-.total-box.time .value{color:var(–teal);}
-.total-box.count .value{color:var(–mustard);}
+  .agg-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+  .agg-controls select,.agg-controls input{padding:7px 8px;border-radius:8px;border:1px solid var(--paper-line);font-size:13px;}
+  .totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .total-box{background:#fff;border:1px solid var(--paper-line);border-radius:10px;padding:10px 12px;}
+  .total-box .label{font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  .total-box .value{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .total-box.money .value{color:var(--stamp-red);}
+  .total-box.time .value{color:var(--teal);}
+  .total-box.count .value{color:var(--mustard);}
 
-table.breakdown{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
-table.breakdown th,table.breakdown td{border:1px solid var(–paper-line);padding:6px 8px;text-align:right;}
-table.breakdown th:first-child,table.breakdown td:first-child{text-align:left;}
-table.breakdown thead th{background:#eeece1;}
+  table.breakdown{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  table.breakdown th,table.breakdown td{border:1px solid var(--paper-line);padding:6px 8px;text-align:right;}
+  table.breakdown th:first-child,table.breakdown td:first-child{text-align:left;}
+  table.breakdown thead th{background:#eeece1;}
 
-.datamgmt .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-.datamgmt button, .datamgmt label.file-btn{
-background:var(–ink);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;display:inline-block;
-}
-.datamgmt button.danger{background:var(–stamp-red);}
-.datamgmt input[type=file]{display:none;}
-.hint{font-size:11.5px;color:var(–ink-soft);line-height:1.6;}
-.empty-msg{color:var(–ink-soft);font-size:12.5px;padding:10px 0;}
-.cat-tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;color:#fff;margin-right:4px;}
-.cat-nekomimi{background:#c98a2c;}
-.cat-metsumuri{background:#7a5fc4;}
-.cat-other{background:#8d8d8d;}
+  .datamgmt .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .datamgmt button, .datamgmt label.file-btn{
+    background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;display:inline-block;
+  }
+  .datamgmt button.danger{background:var(--stamp-red);}
+  .datamgmt input[type=file]{display:none;}
+  .hint{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}
+  .empty-msg{color:var(--ink-soft);font-size:12.5px;padding:10px 0;}
+  .cat-tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;color:#fff;margin-right:4px;}
+  .cat-nekomimi{background:#c98a2c;}
+  .cat-metsumuri{background:#7a5fc4;}
+  .cat-other{background:#8d8d8d;}
 </style>
-
 </head>
 <body>
 
@@ -262,31 +260,45 @@ const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
 /* =========================================================
    ストレージ
 ========================================================= */
-function loadData(){
+function loadStore(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return [];
+    if(!raw) return { records: [], venues: [], eventCategories: [] };
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if(Array.isArray(parsed)){
+      // 旧形式（記録の配列のみ）からの移行
+      return { records: parsed, venues: [], eventCategories: [] };
+    }
+    return {
+      records: Array.isArray(parsed.records) ? parsed.records : [],
+      venues: Array.isArray(parsed.venues) ? parsed.venues : [],
+      eventCategories: Array.isArray(parsed.eventCategories) ? parsed.eventCategories : []
+    };
   }catch(e){
     console.error('load error', e);
-    return [];
+    return { records: [], venues: [], eventCategories: [] };
   }
 }
 function saveData(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ records, venues, eventCategories }));
   }catch(e){
     alert('保存に失敗しました。ブラウザのストレージが利用できない可能性があります。');
     console.error(e);
   }
 }
 
-let records = loadData();
+const _store = loadStore();
+let records = _store.records;
+let venues = _store.venues;
+let eventCategories = _store.eventCategories;
 
 function uid(){
   return 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
 }
+
+function findVenue(id){ return venues.find(v=>v.id===id) || null; }
+function findCategory(id){ return eventCategories.find(c=>c.id===id) || null; }
 
 /* =========================================================
    状態
@@ -305,6 +317,10 @@ TYPE_ORDER.forEach(t=>{
 });
 
 const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
+
+const venueState = { editingId: null };
+const categoryState = { editingId: null };
+const listState = { type: 'all', venueId: 'all', categoryId: 'all', sort: 'desc' };
 
 /* =========================================================
    ユーティリティ
@@ -332,6 +348,9 @@ function renderNav(){
   const nav = document.getElementById('tabNav');
   const tabs = [
     ...TYPE_ORDER.map(t => ({ key:t, label: TYPE_CONFIG[t].label })),
+    { key:'list', label:'一覧' },
+    { key:'venues', label:'会場' },
+    { key:'categories', label:'カテゴリ' },
     { key:'agg', label:'集計' },
     { key:'data', label:'データ管理' }
   ];
@@ -361,6 +380,15 @@ function renderMain(){
   }else if(state.tab === 'data'){
     app.innerHTML = renderDataTabHtml();
     attachDataEvents();
+  }else if(state.tab === 'venues'){
+    app.innerHTML = renderVenuesTabHtml();
+    attachVenuesEvents();
+  }else if(state.tab === 'categories'){
+    app.innerHTML = renderCategoriesTabHtml();
+    attachCategoriesEvents();
+  }else if(state.tab === 'list'){
+    app.innerHTML = renderListTabHtml();
+    attachListEvents();
   }
 }
 
@@ -451,7 +479,8 @@ function renderDayPanelHtml(type, dateStr){
     : (lastSetting ? lastSetting.unitPrice : cfg.defaultPrice);
   const defaultSeconds = cfg.hasSeconds ? (editingEntry ? editingEntry.unitSeconds
     : (lastSetting ? lastSetting.unitSeconds : cfg.defaultSeconds)) : null;
-  const defaultLocation = editingEntry ? editingEntry.location : (lastSetting ? lastSetting.location : '');
+  const defaultVenueId = editingEntry ? (editingEntry.venueId||'') : (lastSetting ? (lastSetting.venueId||'') : '');
+  const defaultCategoryId = editingEntry ? (editingEntry.categoryId||'') : (lastSetting ? (lastSetting.categoryId||'') : '');
   const defaultEvent = editingEntry ? editingEntry.event : (lastSetting ? lastSetting.event : '');
 
   let entriesHtml = '';
@@ -471,10 +500,14 @@ function renderDayPanelHtml(type, dateStr){
       const advLine = hasAdv
         ? `<div class="line2"><span class="cat-tag cat-advance">前売り</span>${e.advanceCount}枚 ・ ${e.advancePrice}円/枚（手数料+${e.advanceFee}円込み）</div>`
         : '';
+      const venue = e.venueId ? findVenue(e.venueId) : null;
+      const venueLabel = venue ? venue.name + (venue.city ? `（${venue.city}）` : '') : (e.location || '会場未設定');
+      const evCategory = e.categoryId ? findCategory(e.categoryId) : null;
+      const evCatLabel = evCategory ? `【${escapeHtml(evCategory.name)}】` : '';
       return `
         <div class="entry-row">
           <div class="info">
-            <div class="line1">${escapeHtml(e.location||'（場所未記入）')} ／ ${escapeHtml(e.event||'（イベント未記入）')} ・ ${e.count}枚</div>
+            <div class="line1">${escapeHtml(venueLabel)} ／ ${evCatLabel}${escapeHtml(e.event||'（イベント未記入）')} ・ ${e.count}枚</div>
             <div class="line2">${line2}</div>
             ${advLine}
           </div>
@@ -497,8 +530,8 @@ function renderDayPanelHtml(type, dateStr){
       ${cfg.secondsPresets.map(s=>`<button type="button" data-preset-seconds="${s}" class="${Number(defaultSeconds)===s?'active':''}">${s}秒</button>`).join('')}
     </div>` : '';
 
-  const categoryHtml = cfg.hasCategory ? `
-    <label>カテゴリー
+  const hapicaKindHtml = cfg.hasCategory ? `
+    <label>ハピカの種類
       <select name="hapicaCategory">
         ${Object.entries(cfg.categories).map(([k,v])=>
           `<option value="${k}" ${editingEntry && editingEntry.hapicaCategory===k ? 'selected':''}>${v}</option>`
@@ -510,6 +543,32 @@ function renderDayPanelHtml(type, dateStr){
     <label>1枚あたりの秒数
       <input type="number" name="unitSeconds" min="0" step="1" value="${defaultSeconds}">
     </label>` : '';
+
+  const venueSelectHtml = venues.length > 0 ? `
+    <label>会場
+      <select name="venueId">
+        <option value="">（未設定）</option>
+        ${venues.map(v=>`<option value="${v.id}" ${defaultVenueId===v.id?'selected':''}>${escapeHtml(v.name)}${v.city ? '（'+escapeHtml(v.city)+'）' : ''}</option>`).join('')}
+      </select>
+    </label>` : `
+    <label>会場
+      <select name="venueId" disabled>
+        <option value="">まだ会場が登録されていません</option>
+      </select>
+    </label>`;
+
+  const categorySelectHtml = eventCategories.length > 0 ? `
+    <label>カテゴリ
+      <select name="categoryId">
+        <option value="">（未設定）</option>
+        ${eventCategories.map(c=>`<option value="${c.id}" ${defaultCategoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+    </label>` : `
+    <label>カテゴリ
+      <select name="categoryId" disabled>
+        <option value="">まだカテゴリが登録されていません</option>
+      </select>
+    </label>`;
 
   let advanceHtml = '';
   if(cfg.hasAdvance){
@@ -550,9 +609,10 @@ function renderDayPanelHtml(type, dateStr){
       <form class="entry-form" data-type="${type}" data-date="${dateStr}" data-editing="${editingId||''}">
         <h3>${editingEntry ? '記録を編集' : '記録を追加'}</h3>
         <div class="row">
-          <label>場所
-            <input type="text" name="location" value="${escapeHtml(defaultLocation)}" placeholder="例：〇〇ホール">
-          </label>
+          ${venueSelectHtml}
+        </div>
+        <div class="row">
+          ${categorySelectHtml}
           <label>イベント名
             <input type="text" name="event" value="${escapeHtml(defaultEvent)}" placeholder="例：〇〇単独握手会">
           </label>
@@ -564,15 +624,15 @@ function renderDayPanelHtml(type, dateStr){
           <label>1枚あたりの金額（円）
             <input type="number" name="unitPrice" min="0" step="1" value="${defaultPrice}">
           </label>
-          ${cfg.hasSeconds ? '' : ''}
         </div>
         ${presetPriceHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
-        ${categoryHtml ? `<div class="row">${categoryHtml}</div>` : ''}
+        ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div>` : ''}
         ${advanceHtml}
         <button type="submit" class="submit-btn">${editingEntry ? '更新する' : '追加する'}</button>
         ${editingEntry ? '<button type="button" class="cancel-edit" data-cancel-edit data-type="'+type+'">編集をやめる</button>' : ''}
       </form>
+      <p class="hint">会場・カテゴリの新規作成は上部ナビの「会場」「カテゴリ」タブから行えます。</p>
     </div>
   `;
 }
@@ -700,11 +760,15 @@ function attachRecordTabEvents(type){
       const cfg = TYPE_CONFIG[type];
       const editingId = form.dataset.editing || null;
 
+      const venueSelect = form.querySelector('[name=venueId]');
+      const categorySelect = form.querySelector('[name=categoryId]');
+
       const entry = {
         id: editingId || uid(),
         type: type,
         date: form.dataset.date,
-        location: (fd.get('location')||'').trim(),
+        venueId: (venueSelect && venueSelect.value) ? venueSelect.value : undefined,
+        categoryId: (categorySelect && categorySelect.value) ? categorySelect.value : undefined,
         event: (fd.get('event')||'').trim(),
         count: Number(fd.get('count')) || 0,
         unitPrice: Number(fd.get('unitPrice')) || 0,
@@ -851,7 +915,7 @@ function renderDataTabHtml(){
     <div class="card datamgmt">
       <h2>データ管理</h2>
       <p class="hint">
-        現在 ${records.length} 件の記録が保存されています。<br>
+        現在 ${records.length} 件の記録、${venues.length} 件の会場、${eventCategories.length} 件のカテゴリが保存されています。<br>
         エクスポートしたファイルは大切に保管してください。バックアップや機種変更の際はインポートで復元できます。<br>
         ※データはこの端末のブラウザ内（localStorage）に保存されます。ブラウザのデータを消去すると記録も消えるため、こまめなエクスポートをおすすめします。
       </p>
@@ -876,7 +940,9 @@ function attachDataEvents(){
     const payload = {
       appName: 'oshi-record-app',
       exportedAt: new Date().toISOString(),
-      records: records
+      records: records,
+      venues: venues,
+      eventCategories: eventCategories
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
@@ -901,8 +967,10 @@ function attachDataEvents(){
   });
 
   app.querySelector('#clearBtn').addEventListener('click', ()=>{
-    if(!confirm('本当にすべての記録を削除しますか？この操作は取り消せません。')) return;
+    if(!confirm('本当にすべての記録・会場・カテゴリを削除しますか？この操作は取り消せません。')) return;
     records = [];
+    venues = [];
+    eventCategories = [];
     saveData();
     renderMain();
   });
@@ -916,6 +984,8 @@ function handleImportFile(file, mode){
       const parsed = JSON.parse(e.target.result);
       const incoming = Array.isArray(parsed) ? parsed : parsed.records;
       if(!Array.isArray(incoming)) throw new Error('形式が不正です');
+      const incomingVenues = Array.isArray(parsed.venues) ? parsed.venues : [];
+      const incomingCategories = Array.isArray(parsed.eventCategories) ? parsed.eventCategories : [];
 
       // 最低限のバリデーション
       const cleaned = incoming.filter(r => r && r.type && r.date && TYPE_CONFIG[r.type]).map(r=>({
@@ -923,26 +993,48 @@ function handleImportFile(file, mode){
         type: r.type,
         date: r.date,
         location: r.location || '',
+        venueId: r.venueId || undefined,
+        categoryId: r.categoryId || undefined,
         event: r.event || '',
         count: Number(r.count) || 0,
         unitPrice: Number(r.unitPrice) || 0,
         unitSeconds: r.unitSeconds!==undefined ? Number(r.unitSeconds) : undefined,
-        hapicaCategory: r.hapicaCategory || undefined
+        hapicaCategory: r.hapicaCategory || undefined,
+        isAdvance: !!r.isAdvance,
+        advanceCount: r.advanceCount!==undefined ? Number(r.advanceCount) : undefined,
+        advancePrice: r.advancePrice!==undefined ? Number(r.advancePrice) : undefined,
+        advanceFee: r.advanceFee!==undefined ? Number(r.advanceFee) : undefined
+      }));
+      const cleanedVenues = incomingVenues.filter(v=>v && v.name).map(v=>({
+        id: v.id || uid(), name: v.name, city: v.city || ''
+      }));
+      const cleanedCategories = incomingCategories.filter(c=>c && c.name).map(c=>({
+        id: c.id || uid(), name: c.name
       }));
 
       if(mode==='replace'){
         if(!confirm('現在のデータを削除して、インポートしたデータに置き換えます。よろしいですか？')) return;
         records = cleaned;
+        venues = cleanedVenues;
+        eventCategories = cleanedCategories;
       }else{
         // 追加：同じidが既にあれば上書き、なければ追加
         cleaned.forEach(nr=>{
           const idx = records.findIndex(r=>r.id===nr.id);
           if(idx>=0) records[idx] = nr; else records.push(nr);
         });
+        cleanedVenues.forEach(nv=>{
+          const idx = venues.findIndex(v=>v.id===nv.id);
+          if(idx>=0) venues[idx] = nv; else venues.push(nv);
+        });
+        cleanedCategories.forEach(nc=>{
+          const idx = eventCategories.findIndex(c=>c.id===nc.id);
+          if(idx>=0) eventCategories[idx] = nc; else eventCategories.push(nc);
+        });
       }
       saveData();
       renderMain();
-      alert('インポートが完了しました（' + cleaned.length + '件）。');
+      alert('インポートが完了しました（記録 ' + cleaned.length + ' 件）。');
     }catch(err){
       console.error(err);
       alert('インポートに失敗しました。ファイルの形式をご確認ください。');
@@ -952,11 +1044,288 @@ function handleImportFile(file, mode){
 }
 
 /* =========================================================
+   会場管理タブ
+========================================================= */
+function renderVenuesTabHtml(){
+  const editingId = venueState.editingId;
+  const editing = editingId ? findVenue(editingId) : null;
+
+  const listHtml = venues.length === 0
+    ? '<p class="empty-msg">まだ会場が登録されていません。下のフォームから追加してください。</p>'
+    : venues.map(v=>{
+        const useCount = records.filter(r=>r.venueId===v.id).length;
+        return `
+          <div class="entry-row">
+            <div class="info">
+              <div class="line1">${escapeHtml(v.name)}</div>
+              <div class="line2">${v.city ? escapeHtml(v.city) : '（都市未設定）'} ・ 使用記録 ${useCount}件</div>
+            </div>
+            <div class="actions">
+              <button data-venue-edit="${v.id}">編集</button>
+              <button data-venue-delete="${v.id}">削除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  return `
+    <div class="card">
+      <h2>会場一覧</h2>
+      ${listHtml}
+    </div>
+    <div class="card">
+      <h3>${editing ? '会場を編集' : '会場を追加'}</h3>
+      <form class="entry-form" id="venueForm" data-editing="${editingId||''}">
+        <div class="row">
+          <label>会場名
+            <input type="text" name="name" value="${editing ? escapeHtml(editing.name) : ''}" placeholder="例：〇〇ホール">
+          </label>
+          <label>都市名
+            <input type="text" name="city" value="${editing ? escapeHtml(editing.city||'') : ''}" placeholder="例：東京都渋谷区">
+          </label>
+        </div>
+        <button type="submit" class="submit-btn">${editing ? '更新する' : '追加する'}</button>
+        ${editing ? '<button type="button" class="cancel-edit" id="venueCancelEdit">編集をやめる</button>' : ''}
+      </form>
+    </div>
+  `;
+}
+
+function attachVenuesEvents(){
+  const app = document.getElementById('app');
+
+  app.querySelectorAll('[data-venue-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      venueState.editingId = btn.dataset.venueEdit;
+      renderMain();
+    });
+  });
+  app.querySelectorAll('[data-venue-delete]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const useCount = records.filter(r=>r.venueId===btn.dataset.venueDelete).length;
+      const msg = useCount > 0
+        ? `この会場は${useCount}件の記録で使用されています。削除すると記録側の会場情報は「未設定」になります。削除しますか？`
+        : 'この会場を削除しますか？';
+      if(!confirm(msg)) return;
+      venues = venues.filter(v=>v.id!==btn.dataset.venueDelete);
+      records.forEach(r=>{ if(r.venueId===btn.dataset.venueDelete) r.venueId = undefined; });
+      saveData();
+      renderMain();
+    });
+  });
+  const cancelBtn = app.querySelector('#venueCancelEdit');
+  if(cancelBtn){
+    cancelBtn.addEventListener('click', ()=>{ venueState.editingId = null; renderMain(); });
+  }
+
+  const form = app.querySelector('#venueForm');
+  if(form){
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData(form);
+      const name = (fd.get('name')||'').trim();
+      if(!name){ alert('会場名を入力してください。'); return; }
+      const city = (fd.get('city')||'').trim();
+      const editingId = form.dataset.editing || null;
+      if(editingId){
+        const v = findVenue(editingId);
+        if(v){ v.name = name; v.city = city; }
+      }else{
+        venues.push({ id: uid(), name, city });
+      }
+      saveData();
+      venueState.editingId = null;
+      renderMain();
+    });
+  }
+}
+
+/* =========================================================
+   カテゴリ管理タブ
+========================================================= */
+function renderCategoriesTabHtml(){
+  const editingId = categoryState.editingId;
+  const editing = editingId ? findCategory(editingId) : null;
+
+  const listHtml = eventCategories.length === 0
+    ? '<p class="empty-msg">まだカテゴリが登録されていません。下のフォームから追加してください。</p>'
+    : eventCategories.map(c=>{
+        const useCount = records.filter(r=>r.categoryId===c.id).length;
+        return `
+          <div class="entry-row">
+            <div class="info">
+              <div class="line1">${escapeHtml(c.name)}</div>
+              <div class="line2">使用記録 ${useCount}件</div>
+            </div>
+            <div class="actions">
+              <button data-cat-edit="${c.id}">編集</button>
+              <button data-cat-delete="${c.id}">削除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  return `
+    <div class="card">
+      <h2>カテゴリ一覧</h2>
+      ${listHtml}
+    </div>
+    <div class="card">
+      <h3>${editing ? 'カテゴリを編集' : 'カテゴリを追加'}</h3>
+      <form class="entry-form" id="categoryForm" data-editing="${editingId||''}">
+        <div class="row">
+          <label>カテゴリ名
+            <input type="text" name="name" value="${editing ? escapeHtml(editing.name) : ''}" placeholder="例：単独イベント">
+          </label>
+        </div>
+        <button type="submit" class="submit-btn">${editing ? '更新する' : '追加する'}</button>
+        ${editing ? '<button type="button" class="cancel-edit" id="categoryCancelEdit">編集をやめる</button>' : ''}
+      </form>
+    </div>
+  `;
+}
+
+function attachCategoriesEvents(){
+  const app = document.getElementById('app');
+
+  app.querySelectorAll('[data-cat-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      categoryState.editingId = btn.dataset.catEdit;
+      renderMain();
+    });
+  });
+  app.querySelectorAll('[data-cat-delete]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const useCount = records.filter(r=>r.categoryId===btn.dataset.catDelete).length;
+      const msg = useCount > 0
+        ? `このカテゴリは${useCount}件の記録で使用されています。削除すると記録側のカテゴリは「未設定」になります。削除しますか？`
+        : 'このカテゴリを削除しますか？';
+      if(!confirm(msg)) return;
+      eventCategories = eventCategories.filter(c=>c.id!==btn.dataset.catDelete);
+      records.forEach(r=>{ if(r.categoryId===btn.dataset.catDelete) r.categoryId = undefined; });
+      saveData();
+      renderMain();
+    });
+  });
+  const cancelBtn = app.querySelector('#categoryCancelEdit');
+  if(cancelBtn){
+    cancelBtn.addEventListener('click', ()=>{ categoryState.editingId = null; renderMain(); });
+  }
+
+  const form = app.querySelector('#categoryForm');
+  if(form){
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData(form);
+      const name = (fd.get('name')||'').trim();
+      if(!name){ alert('カテゴリ名を入力してください。'); return; }
+      const editingId = form.dataset.editing || null;
+      if(editingId){
+        const c = findCategory(editingId);
+        if(c){ c.name = name; }
+      }else{
+        eventCategories.push({ id: uid(), name });
+      }
+      saveData();
+      categoryState.editingId = null;
+      renderMain();
+    });
+  }
+}
+
+/* =========================================================
+   一覧タブ
+========================================================= */
+function entryTotals(e){
+  const cfg = TYPE_CONFIG[e.type];
+  const advCount = (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
+  const advMoney = (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) * Number(e.advancePrice||0) : 0;
+  const count = Number(e.count||0) + advCount;
+  const money = Number(e.count||0) * Number(e.unitPrice||0) + advMoney;
+  return { count, money };
+}
+
+function renderListTabHtml(){
+  const typeOptions = TYPE_ORDER.map(t=>`<option value="${t}" ${listState.type===t?'selected':''}>${TYPE_CONFIG[t].label}</option>`).join('');
+  const venueOptions = venues.map(v=>`<option value="${v.id}" ${listState.venueId===v.id?'selected':''}>${escapeHtml(v.name)}</option>`).join('');
+  const categoryOptions = eventCategories.map(c=>`<option value="${c.id}" ${listState.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+
+  let filtered = records.filter(r=>{
+    if(listState.type!=='all' && r.type!==listState.type) return false;
+    if(listState.venueId!=='all' && r.venueId!==listState.venueId) return false;
+    if(listState.categoryId!=='all' && r.categoryId!==listState.categoryId) return false;
+    return true;
+  });
+  filtered.sort((a,b)=> listState.sort==='desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+
+  const totalCount = filtered.reduce((s,e)=>s+entryTotals(e).count,0);
+  const totalMoney = filtered.reduce((s,e)=>s+entryTotals(e).money,0);
+
+  const rowsHtml = filtered.length === 0
+    ? `<tr><td colspan="7" class="empty-msg">条件に合う記録がありません。</td></tr>`
+    : filtered.map(e=>{
+        const cfg = TYPE_CONFIG[e.type];
+        const venue = e.venueId ? findVenue(e.venueId) : null;
+        const venueLabel = venue ? escapeHtml(venue.name) + (venue.city ? `（${escapeHtml(venue.city)}）` : '') : (e.location ? escapeHtml(e.location) : '－');
+        const category = e.categoryId ? findCategory(e.categoryId) : null;
+        const catLabel = category ? escapeHtml(category.name) : '－';
+        const totals = entryTotals(e);
+        return `<tr>
+          <td>${e.date}</td>
+          <td>${cfg.label}</td>
+          <td>${venueLabel}</td>
+          <td>${catLabel}</td>
+          <td>${escapeHtml(e.event||'－')}</td>
+          <td>${totals.count}枚</td>
+          <td>${formatYen(totals.money)}</td>
+        </tr>`;
+      }).join('');
+
+  return `
+    <div class="card">
+      <h2>記録一覧</h2>
+      <div class="agg-controls">
+        <select id="listType">
+          <option value="all" ${listState.type==='all'?'selected':''}>すべての種類</option>
+          ${typeOptions}
+        </select>
+        <select id="listVenue">
+          <option value="all" ${listState.venueId==='all'?'selected':''}>すべての会場</option>
+          ${venueOptions}
+        </select>
+        <select id="listCategory">
+          <option value="all" ${listState.categoryId==='all'?'selected':''}>すべてのカテゴリ</option>
+          ${categoryOptions}
+        </select>
+        <select id="listSort">
+          <option value="desc" ${listState.sort==='desc'?'selected':''}>新しい順</option>
+          <option value="asc" ${listState.sort==='asc'?'selected':''}>古い順</option>
+        </select>
+      </div>
+      <p class="hint">該当 ${filtered.length}件 ・ 合計 ${totalCount}枚 ・ 合計金額 ${formatYen(totalMoney)}</p>
+      <div style="overflow-x:auto;">
+        <table class="breakdown">
+          <thead><tr><th>日付</th><th>種類</th><th>会場</th><th>カテゴリ</th><th>イベント名</th><th>枚数</th><th>金額</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function attachListEvents(){
+  const app = document.getElementById('app');
+  app.querySelector('#listType').addEventListener('change', (ev)=>{ listState.type = ev.target.value; renderMain(); });
+  app.querySelector('#listVenue').addEventListener('change', (ev)=>{ listState.venueId = ev.target.value; renderMain(); });
+  app.querySelector('#listCategory').addEventListener('change', (ev)=>{ listState.categoryId = ev.target.value; renderMain(); });
+  app.querySelector('#listSort').addEventListener('change', (ev)=>{ listState.sort = ev.target.value; renderMain(); });
+}
+
+/* =========================================================
    初期化
 ========================================================= */
 renderNav();
 renderMain();
 </script>
-
 </body>
 </html>
