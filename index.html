@@ -187,6 +187,17 @@
   table.breakdown th:first-child,table.breakdown td:first-child{text-align:left;}
   table.breakdown thead th{background:#eeece1;}
 
+  .list-table-wrap{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+  }
+  table.list-table{
+    width:100%;
+    min-width:820px;
+  }
+
   .pagination{
     display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;
   }
@@ -272,25 +283,43 @@ const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
 function loadStore(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return { records: [], venues: [], eventCategories: [] };
+    if(!raw) return { records: [], venues: [], majorCategories: [], minorCategories: [] };
     const parsed = JSON.parse(raw);
     if(Array.isArray(parsed)){
       // 旧形式（記録の配列のみ）からの移行
-      return { records: parsed, venues: [], eventCategories: [] };
+      return { records: parsed, venues: [], majorCategories: [], minorCategories: [] };
     }
+    let majorCategories = Array.isArray(parsed.majorCategories) ? parsed.majorCategories : [];
+    let minorCategories = Array.isArray(parsed.minorCategories) ? parsed.minorCategories : [];
+    let recordsList = Array.isArray(parsed.records) ? parsed.records : [];
+
+    // 旧バージョン（大小の区別がないフラットなカテゴリ）からの移行
+    if(majorCategories.length===0 && Array.isArray(parsed.eventCategories) && parsed.eventCategories.length>0){
+      majorCategories = parsed.eventCategories.map(c=>({ id: c.id, name: c.name }));
+      recordsList = recordsList.map(r=>{
+        if(r.categoryId && !r.categoryMajorId){
+          const clone = Object.assign({}, r);
+          clone.categoryMajorId = r.categoryId;
+          return clone;
+        }
+        return r;
+      });
+    }
+
     return {
-      records: Array.isArray(parsed.records) ? parsed.records : [],
+      records: recordsList,
       venues: Array.isArray(parsed.venues) ? parsed.venues : [],
-      eventCategories: Array.isArray(parsed.eventCategories) ? parsed.eventCategories : []
+      majorCategories,
+      minorCategories
     };
   }catch(e){
     console.error('load error', e);
-    return { records: [], venues: [], eventCategories: [] };
+    return { records: [], venues: [], majorCategories: [], minorCategories: [] };
   }
 }
 function saveData(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ records, venues, eventCategories }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ records, venues, majorCategories, minorCategories }));
   }catch(e){
     alert('保存に失敗しました。ブラウザのストレージが利用できない可能性があります。');
     console.error(e);
@@ -300,14 +329,16 @@ function saveData(){
 const _store = loadStore();
 let records = _store.records;
 let venues = _store.venues;
-let eventCategories = _store.eventCategories;
+let majorCategories = _store.majorCategories;
+let minorCategories = _store.minorCategories;
 
 function uid(){
   return 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
 }
 
 function findVenue(id){ return venues.find(v=>v.id===id) || null; }
-function findCategory(id){ return eventCategories.find(c=>c.id===id) || null; }
+function findMajorCategory(id){ return majorCategories.find(c=>c.id===id) || null; }
+function findMinorCategory(id){ return minorCategories.find(c=>c.id===id) || null; }
 
 /* =========================================================
    状態
@@ -328,8 +359,8 @@ TYPE_ORDER.forEach(t=>{
 const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
 
 const venueState = { editingId: null };
-const categoryState = { editingId: null };
-const listState = { type: 'all', venueId: 'all', categoryId: 'all', sort: 'desc', page: 1, pageSize: 20 };
+const categoryState = { majorEditingId: null, minorEditingId: null };
+const listState = { type: 'all', venueId: 'all', majorId: 'all', minorId: 'all', sort: 'desc', page: 1, pageSize: 20 };
 
 /* =========================================================
    ユーティリティ
@@ -337,6 +368,7 @@ const listState = { type: 'all', venueId: 'all', categoryId: 'all', sort: 'desc'
 function pad2(n){ return n < 10 ? '0'+n : ''+n; }
 function toDateStr(y,m,d){ return y+'-'+pad2(m+1)+'-'+pad2(d); }
 function formatYen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
+function formatNumber(n){ return Math.round(n).toLocaleString('ja-JP'); }
 function formatSeconds(sec){
   sec = Math.round(sec);
   const m = Math.floor(sec/60);
@@ -489,7 +521,8 @@ function renderDayPanelHtml(type, dateStr){
   const defaultSeconds = cfg.hasSeconds ? (editingEntry ? editingEntry.unitSeconds
     : (lastSetting ? lastSetting.unitSeconds : cfg.defaultSeconds)) : null;
   const defaultVenueId = editingEntry ? (editingEntry.venueId||'') : (lastSetting ? (lastSetting.venueId||'') : '');
-  const defaultCategoryId = editingEntry ? (editingEntry.categoryId||'') : (lastSetting ? (lastSetting.categoryId||'') : '');
+  const defaultMajorId = editingEntry ? (editingEntry.categoryMajorId||'') : (lastSetting ? (lastSetting.categoryMajorId||'') : '');
+  const defaultMinorId = editingEntry ? (editingEntry.categoryMinorId||'') : (lastSetting ? (lastSetting.categoryMinorId||'') : '');
   const defaultEvent = editingEntry ? editingEntry.event : (lastSetting ? lastSetting.event : '');
 
   let entriesHtml = '';
@@ -511,8 +544,9 @@ function renderDayPanelHtml(type, dateStr){
         : '';
       const venue = e.venueId ? findVenue(e.venueId) : null;
       const venueLabel = venue ? venue.name + (venue.city ? `（${venue.city}）` : '') : (e.location || '会場未設定');
-      const evCategory = e.categoryId ? findCategory(e.categoryId) : null;
-      const evCatLabel = evCategory ? `【${escapeHtml(evCategory.name)}】` : '';
+      const evMajor = e.categoryMajorId ? findMajorCategory(e.categoryMajorId) : null;
+      const evMinor = e.categoryMinorId ? findMinorCategory(e.categoryMinorId) : null;
+      const evCatLabel = evMajor ? `【${escapeHtml(evMajor.name)}${evMinor ? '／'+escapeHtml(evMinor.name) : ''}】` : '';
       return `
         <div class="entry-row">
           <div class="info">
@@ -566,16 +600,25 @@ function renderDayPanelHtml(type, dateStr){
       </select>
     </label>`;
 
-  const categorySelectHtml = eventCategories.length > 0 ? `
-    <label>カテゴリ
-      <select name="categoryId">
+  const majorSelectHtml = majorCategories.length > 0 ? `
+    <label>大カテゴリ
+      <select name="categoryMajorId" data-major-select>
         <option value="">（未設定）</option>
-        ${eventCategories.map(c=>`<option value="${c.id}" ${defaultCategoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+        ${majorCategories.map(m=>`<option value="${m.id}" ${defaultMajorId===m.id?'selected':''}>${escapeHtml(m.name)}</option>`).join('')}
       </select>
     </label>` : `
-    <label>カテゴリ
-      <select name="categoryId" disabled>
-        <option value="">まだカテゴリが登録されていません</option>
+    <label>大カテゴリ
+      <select name="categoryMajorId" disabled>
+        <option value="">まだ大カテゴリが登録されていません</option>
+      </select>
+    </label>`;
+
+  const minorsForDefault = minorCategories.filter(m=>m.majorId===defaultMajorId);
+  const minorSelectHtml = `
+    <label>小カテゴリ
+      <select name="categoryMinorId" data-minor-select>
+        <option value="">（未設定）</option>
+        ${minorsForDefault.map(m=>`<option value="${m.id}" ${defaultMinorId===m.id?'selected':''}>${escapeHtml(m.name)}</option>`).join('')}
       </select>
     </label>`;
 
@@ -621,7 +664,10 @@ function renderDayPanelHtml(type, dateStr){
           ${venueSelectHtml}
         </div>
         <div class="row">
-          ${categorySelectHtml}
+          ${majorSelectHtml}
+          ${minorSelectHtml}
+        </div>
+        <div class="row">
           <label>イベント名
             <input type="text" name="event" value="${escapeHtml(defaultEvent)}" placeholder="例：〇〇単独握手会">
           </label>
@@ -760,6 +806,18 @@ function attachRecordTabEvents(type){
     advancePriceField.addEventListener('input', ()=>{ advancePriceField.dataset.touched = '1'; });
   }
 
+  // 大カテゴリ選択時に小カテゴリの選択肢を絞り込む
+  app.querySelectorAll('[data-major-select]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const form = sel.closest('form');
+      const minorSel = form.querySelector('[data-minor-select]');
+      const majorId = sel.value;
+      const opts = minorCategories.filter(m=>m.majorId===majorId);
+      minorSel.innerHTML = '<option value="">（未設定）</option>' +
+        opts.map(m=>`<option value="${m.id}">${escapeHtml(m.name)}</option>`).join('');
+    });
+  });
+
   // フォーム送信
   const form = app.querySelector('form.entry-form');
   if(form){
@@ -770,14 +828,16 @@ function attachRecordTabEvents(type){
       const editingId = form.dataset.editing || null;
 
       const venueSelect = form.querySelector('[name=venueId]');
-      const categorySelect = form.querySelector('[name=categoryId]');
+      const majorSelect = form.querySelector('[name=categoryMajorId]');
+      const minorSelect = form.querySelector('[name=categoryMinorId]');
 
       const entry = {
         id: editingId || uid(),
         type: type,
         date: form.dataset.date,
         venueId: (venueSelect && venueSelect.value) ? venueSelect.value : undefined,
-        categoryId: (categorySelect && categorySelect.value) ? categorySelect.value : undefined,
+        categoryMajorId: (majorSelect && majorSelect.value) ? majorSelect.value : undefined,
+        categoryMinorId: (minorSelect && minorSelect.value) ? minorSelect.value : undefined,
         event: (fd.get('event')||'').trim(),
         count: Number(fd.get('count')) || 0,
         unitPrice: Number(fd.get('unitPrice')) || 0,
@@ -924,7 +984,7 @@ function renderDataTabHtml(){
     <div class="card datamgmt">
       <h2>データ管理</h2>
       <p class="hint">
-        現在 ${records.length} 件の記録、${venues.length} 件の会場、${eventCategories.length} 件のカテゴリが保存されています。<br>
+        現在 ${records.length} 件の記録、${venues.length} 件の会場、${majorCategories.length} 件の大カテゴリ、${minorCategories.length} 件の小カテゴリが保存されています。<br>
         エクスポートしたファイルは大切に保管してください。バックアップや機種変更の際はインポートで復元できます。<br>
         ※データはこの端末のブラウザ内（localStorage）に保存されます。ブラウザのデータを消去すると記録も消えるため、こまめなエクスポートをおすすめします。
       </p>
@@ -951,7 +1011,8 @@ function attachDataEvents(){
       exportedAt: new Date().toISOString(),
       records: records,
       venues: venues,
-      eventCategories: eventCategories
+      majorCategories: majorCategories,
+      minorCategories: minorCategories
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
@@ -979,7 +1040,8 @@ function attachDataEvents(){
     if(!confirm('本当にすべての記録・会場・カテゴリを削除しますか？この操作は取り消せません。')) return;
     records = [];
     venues = [];
-    eventCategories = [];
+    majorCategories = [];
+    minorCategories = [];
     saveData();
     renderMain();
   });
@@ -994,7 +1056,9 @@ function handleImportFile(file, mode){
       const incoming = Array.isArray(parsed) ? parsed : parsed.records;
       if(!Array.isArray(incoming)) throw new Error('形式が不正です');
       const incomingVenues = Array.isArray(parsed.venues) ? parsed.venues : [];
-      const incomingCategories = Array.isArray(parsed.eventCategories) ? parsed.eventCategories : [];
+      const incomingMajor = Array.isArray(parsed.majorCategories) ? parsed.majorCategories
+        : (Array.isArray(parsed.eventCategories) ? parsed.eventCategories : []);
+      const incomingMinor = Array.isArray(parsed.minorCategories) ? parsed.minorCategories : [];
 
       // 最低限のバリデーション
       const cleaned = incoming.filter(r => r && r.type && r.date && TYPE_CONFIG[r.type]).map(r=>({
@@ -1003,7 +1067,8 @@ function handleImportFile(file, mode){
         date: r.date,
         location: r.location || '',
         venueId: r.venueId || undefined,
-        categoryId: r.categoryId || undefined,
+        categoryMajorId: r.categoryMajorId || r.categoryId || undefined,
+        categoryMinorId: r.categoryMinorId || undefined,
         event: r.event || '',
         count: Number(r.count) || 0,
         unitPrice: Number(r.unitPrice) || 0,
@@ -1017,15 +1082,19 @@ function handleImportFile(file, mode){
       const cleanedVenues = incomingVenues.filter(v=>v && v.name).map(v=>({
         id: v.id || uid(), name: v.name, city: v.city || ''
       }));
-      const cleanedCategories = incomingCategories.filter(c=>c && c.name).map(c=>({
+      const cleanedMajor = incomingMajor.filter(c=>c && c.name).map(c=>({
         id: c.id || uid(), name: c.name
+      }));
+      const cleanedMinor = incomingMinor.filter(c=>c && c.name && c.majorId).map(c=>({
+        id: c.id || uid(), name: c.name, majorId: c.majorId
       }));
 
       if(mode==='replace'){
         if(!confirm('現在のデータを削除して、インポートしたデータに置き換えます。よろしいですか？')) return;
         records = cleaned;
         venues = cleanedVenues;
-        eventCategories = cleanedCategories;
+        majorCategories = cleanedMajor;
+        minorCategories = cleanedMinor;
       }else{
         // 追加：同じidが既にあれば上書き、なければ追加
         cleaned.forEach(nr=>{
@@ -1036,9 +1105,13 @@ function handleImportFile(file, mode){
           const idx = venues.findIndex(v=>v.id===nv.id);
           if(idx>=0) venues[idx] = nv; else venues.push(nv);
         });
-        cleanedCategories.forEach(nc=>{
-          const idx = eventCategories.findIndex(c=>c.id===nc.id);
-          if(idx>=0) eventCategories[idx] = nc; else eventCategories.push(nc);
+        cleanedMajor.forEach(nc=>{
+          const idx = majorCategories.findIndex(c=>c.id===nc.id);
+          if(idx>=0) majorCategories[idx] = nc; else majorCategories.push(nc);
+        });
+        cleanedMinor.forEach(nc=>{
+          const idx = minorCategories.findIndex(c=>c.id===nc.id);
+          if(idx>=0) minorCategories[idx] = nc; else minorCategories.push(nc);
         });
       }
       saveData();
@@ -1153,43 +1226,92 @@ function attachVenuesEvents(){
    カテゴリ管理タブ
 ========================================================= */
 function renderCategoriesTabHtml(){
-  const editingId = categoryState.editingId;
-  const editing = editingId ? findCategory(editingId) : null;
+  const majorEditingId = categoryState.majorEditingId;
+  const majorEditing = majorEditingId ? findMajorCategory(majorEditingId) : null;
+  const minorEditingId = categoryState.minorEditingId;
+  const minorEditing = minorEditingId ? findMinorCategory(minorEditingId) : null;
 
-  const listHtml = eventCategories.length === 0
-    ? '<p class="empty-msg">まだカテゴリが登録されていません。下のフォームから追加してください。</p>'
-    : eventCategories.map(c=>{
-        const useCount = records.filter(r=>r.categoryId===c.id).length;
+  const majorListHtml = majorCategories.length === 0
+    ? '<p class="empty-msg">まだ大カテゴリが登録されていません。下のフォームから追加してください。</p>'
+    : majorCategories.map(m=>{
+        const minorCount = minorCategories.filter(mc=>mc.majorId===m.id).length;
+        const useCount = records.filter(r=>r.categoryMajorId===m.id).length;
         return `
           <div class="entry-row">
             <div class="info">
-              <div class="line1">${escapeHtml(c.name)}</div>
-              <div class="line2">使用記録 ${useCount}件</div>
+              <div class="line1">${escapeHtml(m.name)}</div>
+              <div class="line2">小カテゴリ ${minorCount}件 ・ 使用記録 ${useCount}件</div>
             </div>
             <div class="actions">
-              <button data-cat-edit="${c.id}">編集</button>
-              <button data-cat-delete="${c.id}">削除</button>
+              <button data-major-edit="${m.id}">編集</button>
+              <button data-major-delete="${m.id}">削除</button>
             </div>
           </div>
         `;
       }).join('');
 
+  const minorListHtml = minorCategories.length === 0
+    ? '<p class="empty-msg">まだ小カテゴリが登録されていません。</p>'
+    : minorCategories.map(mc=>{
+        const parent = findMajorCategory(mc.majorId);
+        const useCount = records.filter(r=>r.categoryMinorId===mc.id).length;
+        return `
+          <div class="entry-row">
+            <div class="info">
+              <div class="line1">${escapeHtml(mc.name)}</div>
+              <div class="line2">大カテゴリ：${parent ? escapeHtml(parent.name) : '（不明）'} ・ 使用記録 ${useCount}件</div>
+            </div>
+            <div class="actions">
+              <button data-minor-edit="${mc.id}">編集</button>
+              <button data-minor-delete="${mc.id}">削除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+  const majorOptionsForMinorForm = majorCategories.map(m=>
+    `<option value="${m.id}" ${minorEditing && minorEditing.majorId===m.id ? 'selected' : ''}>${escapeHtml(m.name)}</option>`
+  ).join('');
+
   return `
     <div class="card">
-      <h2>カテゴリ一覧</h2>
-      ${listHtml}
+      <h2>大カテゴリ一覧</h2>
+      ${majorListHtml}
     </div>
     <div class="card">
-      <h3>${editing ? 'カテゴリを編集' : 'カテゴリを追加'}</h3>
-      <form class="entry-form" id="categoryForm" data-editing="${editingId||''}">
+      <h3>${majorEditing ? '大カテゴリを編集' : '大カテゴリを追加'}</h3>
+      <form class="entry-form" id="majorCategoryForm" data-editing="${majorEditingId||''}">
         <div class="row">
-          <label>カテゴリ名
-            <input type="text" name="name" value="${editing ? escapeHtml(editing.name) : ''}" placeholder="例：単独イベント">
+          <label>大カテゴリ名
+            <input type="text" name="name" value="${majorEditing ? escapeHtml(majorEditing.name) : ''}" placeholder="例：単独イベント">
           </label>
         </div>
-        <button type="submit" class="submit-btn">${editing ? '更新する' : '追加する'}</button>
-        ${editing ? '<button type="button" class="cancel-edit" id="categoryCancelEdit">編集をやめる</button>' : ''}
+        <button type="submit" class="submit-btn">${majorEditing ? '更新する' : '追加する'}</button>
+        ${majorEditing ? '<button type="button" class="cancel-edit" id="majorCategoryCancelEdit">編集をやめる</button>' : ''}
       </form>
+    </div>
+
+    <div class="card">
+      <h2>小カテゴリ一覧</h2>
+      ${minorListHtml}
+    </div>
+    <div class="card">
+      <h3>${minorEditing ? '小カテゴリを編集' : '小カテゴリを追加'}</h3>
+      ${majorCategories.length === 0 ? '<p class="empty-msg">先に大カテゴリを登録してください。</p>' : `
+      <form class="entry-form" id="minorCategoryForm" data-editing="${minorEditingId||''}">
+        <div class="row">
+          <label>所属する大カテゴリ
+            <select name="majorId">
+              ${majorOptionsForMinorForm}
+            </select>
+          </label>
+          <label>小カテゴリ名
+            <input type="text" name="name" value="${minorEditing ? escapeHtml(minorEditing.name) : ''}" placeholder="例：全国ツアー">
+          </label>
+        </div>
+        <button type="submit" class="submit-btn">${minorEditing ? '更新する' : '追加する'}</button>
+        ${minorEditing ? '<button type="button" class="cancel-edit" id="minorCategoryCancelEdit">編集をやめる</button>' : ''}
+      </form>`}
     </div>
   `;
 }
@@ -1197,46 +1319,105 @@ function renderCategoriesTabHtml(){
 function attachCategoriesEvents(){
   const app = document.getElementById('app');
 
-  app.querySelectorAll('[data-cat-edit]').forEach(btn=>{
+  // 大カテゴリ
+  app.querySelectorAll('[data-major-edit]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      categoryState.editingId = btn.dataset.catEdit;
+      categoryState.majorEditingId = btn.dataset.majorEdit;
       renderMain();
     });
   });
-  app.querySelectorAll('[data-cat-delete]').forEach(btn=>{
+  app.querySelectorAll('[data-major-delete]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      const useCount = records.filter(r=>r.categoryId===btn.dataset.catDelete).length;
-      const msg = useCount > 0
-        ? `このカテゴリは${useCount}件の記録で使用されています。削除すると記録側のカテゴリは「未設定」になります。削除しますか？`
-        : 'このカテゴリを削除しますか？';
+      const id = btn.dataset.majorDelete;
+      const minorCount = minorCategories.filter(mc=>mc.majorId===id).length;
+      const useCount = records.filter(r=>r.categoryMajorId===id).length;
+      let msg = 'この大カテゴリを削除しますか？';
+      if(minorCount > 0){
+        msg = `この大カテゴリには${minorCount}件の小カテゴリが紐づいています。削除すると小カテゴリも一緒に削除されます。`
+          + (useCount > 0 ? `また、${useCount}件の記録のカテゴリ情報が「未設定」になります。` : '')
+          + ' よろしいですか？';
+      }else if(useCount > 0){
+        msg = `この大カテゴリは${useCount}件の記録で使用されています。削除すると記録側のカテゴリ情報は「未設定」になります。削除しますか？`;
+      }
       if(!confirm(msg)) return;
-      eventCategories = eventCategories.filter(c=>c.id!==btn.dataset.catDelete);
-      records.forEach(r=>{ if(r.categoryId===btn.dataset.catDelete) r.categoryId = undefined; });
+      const removedMinorIds = minorCategories.filter(mc=>mc.majorId===id).map(mc=>mc.id);
+      minorCategories = minorCategories.filter(mc=>mc.majorId!==id);
+      majorCategories = majorCategories.filter(m=>m.id!==id);
+      records.forEach(r=>{
+        if(r.categoryMajorId===id){ r.categoryMajorId = undefined; r.categoryMinorId = undefined; }
+        else if(r.categoryMinorId && removedMinorIds.includes(r.categoryMinorId)){ r.categoryMinorId = undefined; }
+      });
       saveData();
       renderMain();
     });
   });
-  const cancelBtn = app.querySelector('#categoryCancelEdit');
-  if(cancelBtn){
-    cancelBtn.addEventListener('click', ()=>{ categoryState.editingId = null; renderMain(); });
+  const majorCancelBtn = app.querySelector('#majorCategoryCancelEdit');
+  if(majorCancelBtn){
+    majorCancelBtn.addEventListener('click', ()=>{ categoryState.majorEditingId = null; renderMain(); });
   }
-
-  const form = app.querySelector('#categoryForm');
-  if(form){
-    form.addEventListener('submit', (ev)=>{
+  const majorForm = app.querySelector('#majorCategoryForm');
+  if(majorForm){
+    majorForm.addEventListener('submit', (ev)=>{
       ev.preventDefault();
-      const fd = new FormData(form);
+      const fd = new FormData(majorForm);
       const name = (fd.get('name')||'').trim();
-      if(!name){ alert('カテゴリ名を入力してください。'); return; }
-      const editingId = form.dataset.editing || null;
+      if(!name){ alert('大カテゴリ名を入力してください。'); return; }
+      const editingId = majorForm.dataset.editing || null;
       if(editingId){
-        const c = findCategory(editingId);
-        if(c){ c.name = name; }
+        const m = findMajorCategory(editingId);
+        if(m){ m.name = name; }
       }else{
-        eventCategories.push({ id: uid(), name });
+        majorCategories.push({ id: uid(), name });
       }
       saveData();
-      categoryState.editingId = null;
+      categoryState.majorEditingId = null;
+      renderMain();
+    });
+  }
+
+  // 小カテゴリ
+  app.querySelectorAll('[data-minor-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      categoryState.minorEditingId = btn.dataset.minorEdit;
+      renderMain();
+    });
+  });
+  app.querySelectorAll('[data-minor-delete]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.minorDelete;
+      const useCount = records.filter(r=>r.categoryMinorId===id).length;
+      const msg = useCount > 0
+        ? `この小カテゴリは${useCount}件の記録で使用されています。削除すると記録側の小カテゴリ情報は「未設定」になります。削除しますか？`
+        : 'この小カテゴリを削除しますか？';
+      if(!confirm(msg)) return;
+      minorCategories = minorCategories.filter(mc=>mc.id!==id);
+      records.forEach(r=>{ if(r.categoryMinorId===id) r.categoryMinorId = undefined; });
+      saveData();
+      renderMain();
+    });
+  });
+  const minorCancelBtn = app.querySelector('#minorCategoryCancelEdit');
+  if(minorCancelBtn){
+    minorCancelBtn.addEventListener('click', ()=>{ categoryState.minorEditingId = null; renderMain(); });
+  }
+  const minorForm = app.querySelector('#minorCategoryForm');
+  if(minorForm){
+    minorForm.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      const fd = new FormData(minorForm);
+      const name = (fd.get('name')||'').trim();
+      const majorId = fd.get('majorId') || '';
+      if(!name){ alert('小カテゴリ名を入力してください。'); return; }
+      if(!majorId){ alert('所属する大カテゴリを選択してください。'); return; }
+      const editingId = minorForm.dataset.editing || null;
+      if(editingId){
+        const mc = findMinorCategory(editingId);
+        if(mc){ mc.name = name; mc.majorId = majorId; }
+      }else{
+        minorCategories.push({ id: uid(), name, majorId });
+      }
+      saveData();
+      categoryState.minorEditingId = null;
       renderMain();
     });
   }
@@ -1257,12 +1438,18 @@ function entryTotals(e){
 function renderListTabHtml(){
   const typeOptions = TYPE_ORDER.map(t=>`<option value="${t}" ${listState.type===t?'selected':''}>${TYPE_CONFIG[t].label}</option>`).join('');
   const venueOptions = venues.map(v=>`<option value="${v.id}" ${listState.venueId===v.id?'selected':''}>${escapeHtml(v.name)}</option>`).join('');
-  const categoryOptions = eventCategories.map(c=>`<option value="${c.id}" ${listState.categoryId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const majorOptions = majorCategories.map(m=>`<option value="${m.id}" ${listState.majorId===m.id?'selected':''}>${escapeHtml(m.name)}</option>`).join('');
+  const minorCandidates = listState.majorId !== 'all' ? minorCategories.filter(mc=>mc.majorId===listState.majorId) : minorCategories;
+  const minorOptions = minorCandidates.map(mc=>{
+    const parent = findMajorCategory(mc.majorId);
+    return `<option value="${mc.id}" ${listState.minorId===mc.id?'selected':''}>${escapeHtml(mc.name)}${parent ? '（'+escapeHtml(parent.name)+'）' : ''}</option>`;
+  }).join('');
 
   let filtered = records.filter(r=>{
     if(listState.type!=='all' && r.type!==listState.type) return false;
     if(listState.venueId!=='all' && r.venueId!==listState.venueId) return false;
-    if(listState.categoryId!=='all' && r.categoryId!==listState.categoryId) return false;
+    if(listState.majorId!=='all' && r.categoryMajorId!==listState.majorId) return false;
+    if(listState.minorId!=='all' && r.categoryMinorId!==listState.minorId) return false;
     return true;
   });
   filtered.sort((a,b)=> listState.sort==='desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
@@ -1283,8 +1470,9 @@ function renderListTabHtml(){
         const cfg = TYPE_CONFIG[e.type];
         const venue = e.venueId ? findVenue(e.venueId) : null;
         const venueLabel = venue ? escapeHtml(venue.name) + (venue.city ? `（${escapeHtml(venue.city)}）` : '') : (e.location ? escapeHtml(e.location) : '－');
-        const category = e.categoryId ? findCategory(e.categoryId) : null;
-        const catLabel = category ? escapeHtml(category.name) : '－';
+        const majorCat = e.categoryMajorId ? findMajorCategory(e.categoryMajorId) : null;
+        const minorCat = e.categoryMinorId ? findMinorCategory(e.categoryMinorId) : null;
+        const catLabel = majorCat ? escapeHtml(majorCat.name) + (minorCat ? '／'+escapeHtml(minorCat.name) : '') : '－';
         const totals = entryTotals(e);
         return `<tr>
           <td>${e.date}</td>
@@ -1292,8 +1480,8 @@ function renderListTabHtml(){
           <td>${venueLabel}</td>
           <td>${catLabel}</td>
           <td>${escapeHtml(e.event||'－')}</td>
-          <td>${totals.count}枚</td>
-          <td>${formatYen(totals.money)}</td>
+          <td>${formatNumber(totals.count)}</td>
+          <td>${formatNumber(totals.money)}</td>
         </tr>`;
       }).join('');
 
@@ -1309,18 +1497,22 @@ function renderListTabHtml(){
           <option value="all" ${listState.venueId==='all'?'selected':''}>すべての会場</option>
           ${venueOptions}
         </select>
-        <select id="listCategory">
-          <option value="all" ${listState.categoryId==='all'?'selected':''}>すべてのカテゴリ</option>
-          ${categoryOptions}
+        <select id="listMajor">
+          <option value="all" ${listState.majorId==='all'?'selected':''}>すべての大カテゴリ</option>
+          ${majorOptions}
+        </select>
+        <select id="listMinor">
+          <option value="all" ${listState.minorId==='all'?'selected':''}>すべての小カテゴリ</option>
+          ${minorOptions}
         </select>
         <select id="listSort">
           <option value="desc" ${listState.sort==='desc'?'selected':''}>新しい順</option>
           <option value="asc" ${listState.sort==='asc'?'selected':''}>古い順</option>
         </select>
       </div>
-      <p class="hint">該当 ${filtered.length}件 ・ 合計 ${totalCount}枚 ・ 合計金額 ${formatYen(totalMoney)}</p>
-      <div style="overflow-x:auto;">
-        <table class="breakdown">
+      <p class="hint">該当 ${filtered.length}件 ・ 合計 ${formatNumber(totalCount)} ・ 合計金額 ${formatNumber(totalMoney)}</p>
+      <div class="list-table-wrap">
+        <table class="breakdown list-table">
           <thead><tr><th>日付</th><th>種類</th><th>会場</th><th>カテゴリ</th><th>イベント名</th><th>枚数</th><th>金額</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
@@ -1338,7 +1530,8 @@ function attachListEvents(){
   const app = document.getElementById('app');
   app.querySelector('#listType').addEventListener('change', (ev)=>{ listState.type = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listVenue').addEventListener('change', (ev)=>{ listState.venueId = ev.target.value; listState.page = 1; renderMain(); });
-  app.querySelector('#listCategory').addEventListener('change', (ev)=>{ listState.categoryId = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listMajor').addEventListener('change', (ev)=>{ listState.majorId = ev.target.value; listState.minorId = 'all'; listState.page = 1; renderMain(); });
+  app.querySelector('#listMinor').addEventListener('change', (ev)=>{ listState.minorId = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listSort').addEventListener('change', (ev)=>{ listState.sort = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listPrevPage').addEventListener('click', ()=>{ listState.page -= 1; renderMain(); });
   app.querySelector('#listNextPage').addEventListener('click', ()=>{ listState.page += 1; renderMain(); });
