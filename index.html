@@ -187,6 +187,15 @@
   table.breakdown th:first-child,table.breakdown td:first-child{text-align:left;}
   table.breakdown thead th{background:#eeece1;}
 
+  .pagination{
+    display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px;
+  }
+  .pagination button{
+    background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12.5px;cursor:pointer;
+  }
+  .pagination button:disabled{background:#c9c6ba;cursor:not-allowed;}
+  .pagination .page-info{font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+
   .datamgmt .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .datamgmt button, .datamgmt label.file-btn{
     background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;display:inline-block;
@@ -320,7 +329,7 @@ const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 }
 
 const venueState = { editingId: null };
 const categoryState = { editingId: null };
-const listState = { type: 'all', venueId: 'all', categoryId: 'all', sort: 'desc' };
+const listState = { type: 'all', venueId: 'all', categoryId: 'all', sort: 'desc', page: 1, pageSize: 20 };
 
 /* =========================================================
    ユーティリティ
@@ -1261,9 +1270,16 @@ function renderListTabHtml(){
   const totalCount = filtered.reduce((s,e)=>s+entryTotals(e).count,0);
   const totalMoney = filtered.reduce((s,e)=>s+entryTotals(e).money,0);
 
-  const rowsHtml = filtered.length === 0
+  const pageSize = listState.pageSize;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  if(listState.page > totalPages) listState.page = totalPages;
+  if(listState.page < 1) listState.page = 1;
+  const startIdx = (listState.page - 1) * pageSize;
+  const pageItems = filtered.slice(startIdx, startIdx + pageSize);
+
+  const rowsHtml = pageItems.length === 0
     ? `<tr><td colspan="7" class="empty-msg">条件に合う記録がありません。</td></tr>`
-    : filtered.map(e=>{
+    : pageItems.map(e=>{
         const cfg = TYPE_CONFIG[e.type];
         const venue = e.venueId ? findVenue(e.venueId) : null;
         const venueLabel = venue ? escapeHtml(venue.name) + (venue.city ? `（${escapeHtml(venue.city)}）` : '') : (e.location ? escapeHtml(e.location) : '－');
@@ -1309,16 +1325,23 @@ function renderListTabHtml(){
           <tbody>${rowsHtml}</tbody>
         </table>
       </div>
+      <div class="pagination">
+        <button type="button" id="listPrevPage" ${listState.page<=1?'disabled':''}>＜ 前へ</button>
+        <span class="page-info">${listState.page} / ${totalPages} ページ</span>
+        <button type="button" id="listNextPage" ${listState.page>=totalPages?'disabled':''}>次へ ＞</button>
+      </div>
     </div>
   `;
 }
 
 function attachListEvents(){
   const app = document.getElementById('app');
-  app.querySelector('#listType').addEventListener('change', (ev)=>{ listState.type = ev.target.value; renderMain(); });
-  app.querySelector('#listVenue').addEventListener('change', (ev)=>{ listState.venueId = ev.target.value; renderMain(); });
-  app.querySelector('#listCategory').addEventListener('change', (ev)=>{ listState.categoryId = ev.target.value; renderMain(); });
-  app.querySelector('#listSort').addEventListener('change', (ev)=>{ listState.sort = ev.target.value; renderMain(); });
+  app.querySelector('#listType').addEventListener('change', (ev)=>{ listState.type = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listVenue').addEventListener('change', (ev)=>{ listState.venueId = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listCategory').addEventListener('change', (ev)=>{ listState.categoryId = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listSort').addEventListener('change', (ev)=>{ listState.sort = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listPrevPage').addEventListener('click', ()=>{ listState.page -= 1; renderMain(); });
+  app.querySelector('#listNextPage').addEventListener('click', ()=>{ listState.page += 1; renderMain(); });
 }
 
 /* =========================================================
