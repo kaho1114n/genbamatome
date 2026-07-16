@@ -385,7 +385,8 @@ const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 }
 
 const venueState = { editingId: null, page: 1, pageSize: 20, search: '' };
 const categoryState = { majorEditingId: null, minorEditingId: null, majorPage: 1, minorPage: 1, pageSize: 20, majorSearch: '', minorSearch: '' };
-const listState = { type: 'all', venueId: 'all', majorId: 'all', minorId: 'all', sort: 'desc', page: 1, pageSize: 20 };
+const listState = { type: 'all', venueId: 'all', city: 'all', majorId: 'all', minorId: 'all', sort: 'desc', page: 1, pageSize: 20 };
+const hapicaListState = { venueId: 'all', city: 'all', sort: 'desc' };
 
 /* =========================================================
    ユーティリティ
@@ -430,6 +431,7 @@ function renderNav(){
   const tabs = [
     ...TYPE_ORDER.map(t => ({ key:t, label: TYPE_CONFIG[t].label })),
     { key:'list', label:'一覧' },
+    { key:'hapicaList', label:'ハピカ一覧' },
     { key:'venues', label:'会場' },
     { key:'categories', label:'カテゴリ' },
     { key:'agg', label:'集計' },
@@ -470,6 +472,9 @@ function renderMain(){
   }else if(state.tab === 'list'){
     app.innerHTML = renderListTabHtml();
     attachListEvents();
+  }else if(state.tab === 'hapicaList'){
+    app.innerHTML = renderHapicaListTabHtml();
+    attachHapicaListEvents();
   }
 }
 
@@ -1683,8 +1688,11 @@ function entryTotals(e){
 }
 
 function renderListTabHtml(){
-  const typeOptions = TYPE_ORDER.map(t=>`<option value="${t}" ${listState.type===t?'selected':''}>${TYPE_CONFIG[t].label}</option>`).join('');
+  const listableTypes = TYPE_ORDER.filter(t=>t!=='hapica');
+  const typeOptions = listableTypes.map(t=>`<option value="${t}" ${listState.type===t?'selected':''}>${TYPE_CONFIG[t].label}</option>`).join('');
   const venueOptions = venues.map(v=>`<option value="${v.id}" ${listState.venueId===v.id?'selected':''}>${escapeHtml(v.name)}</option>`).join('');
+  const cityList = Array.from(new Set(venues.map(v=>(v.city||'').trim()).filter(c=>c))).sort((a,b)=>a.localeCompare(b,'ja'));
+  const cityOptions = cityList.map(c=>`<option value="${escapeHtml(c)}" ${listState.city===c?'selected':''}>${escapeHtml(c)}</option>`).join('');
   const majorOptions = majorCategories.map(m=>`<option value="${m.id}" ${listState.majorId===m.id?'selected':''}>${escapeHtml(m.name)}</option>`).join('');
   const minorCandidates = listState.majorId !== 'all' ? minorCategories.filter(mc=>mc.majorId===listState.majorId) : minorCategories;
   const minorOptions = minorCandidates.map(mc=>{
@@ -1693,8 +1701,13 @@ function renderListTabHtml(){
   }).join('');
 
   let filtered = records.filter(r=>{
+    if(r.type==='hapica') return false; // ハピカは専用タブで表示
     if(listState.type!=='all' && r.type!==listState.type) return false;
     if(listState.venueId!=='all' && r.venueId!==listState.venueId) return false;
+    if(listState.city!=='all'){
+      const v = r.venueId ? findVenue(r.venueId) : null;
+      if(!v || (v.city||'').trim() !== listState.city) return false;
+    }
     if(listState.majorId!=='all' && r.categoryMajorId!==listState.majorId) return false;
     if(listState.minorId!=='all' && r.categoryMinorId!==listState.minorId) return false;
     return true;
@@ -1734,7 +1747,7 @@ function renderListTabHtml(){
 
   return `
     <div class="card">
-      <h2>記録一覧</h2>
+      <h2>記録一覧（ハピカを除く）</h2>
       <div class="agg-controls">
         <select id="listType">
           <option value="all" ${listState.type==='all'?'selected':''}>すべての種類</option>
@@ -1743,6 +1756,10 @@ function renderListTabHtml(){
         <select id="listVenue">
           <option value="all" ${listState.venueId==='all'?'selected':''}>すべての会場</option>
           ${venueOptions}
+        </select>
+        <select id="listCity">
+          <option value="all" ${listState.city==='all'?'selected':''}>すべての都市</option>
+          ${cityOptions}
         </select>
         <select id="listMajor">
           <option value="all" ${listState.majorId==='all'?'selected':''}>すべての大カテゴリ</option>
@@ -1777,11 +1794,115 @@ function attachListEvents(){
   const app = document.getElementById('app');
   app.querySelector('#listType').addEventListener('change', (ev)=>{ listState.type = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listVenue').addEventListener('change', (ev)=>{ listState.venueId = ev.target.value; listState.page = 1; renderMain(); });
+  app.querySelector('#listCity').addEventListener('change', (ev)=>{ listState.city = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listMajor').addEventListener('change', (ev)=>{ listState.majorId = ev.target.value; listState.minorId = 'all'; listState.page = 1; renderMain(); });
   app.querySelector('#listMinor').addEventListener('change', (ev)=>{ listState.minorId = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listSort').addEventListener('change', (ev)=>{ listState.sort = ev.target.value; listState.page = 1; renderMain(); });
   app.querySelector('#listPrevPage').addEventListener('click', ()=>{ listState.page -= 1; renderMain(); });
   app.querySelector('#listNextPage').addEventListener('click', ()=>{ listState.page += 1; renderMain(); });
+}
+
+/* =========================================================
+   ハピカ一覧タブ（カテゴリ別）
+========================================================= */
+function renderHapicaListTabHtml(){
+  const venueOptions = venues.map(v=>`<option value="${v.id}" ${hapicaListState.venueId===v.id?'selected':''}>${escapeHtml(v.name)}</option>`).join('');
+  const cityList = Array.from(new Set(venues.map(v=>(v.city||'').trim()).filter(c=>c))).sort((a,b)=>a.localeCompare(b,'ja'));
+  const cityOptions = cityList.map(c=>`<option value="${escapeHtml(c)}" ${hapicaListState.city===c?'selected':''}>${escapeHtml(c)}</option>`).join('');
+
+  let filtered = records.filter(r=>{
+    if(r.type!=='hapica') return false;
+    if(hapicaListState.venueId!=='all' && r.venueId!==hapicaListState.venueId) return false;
+    if(hapicaListState.city!=='all'){
+      const v = r.venueId ? findVenue(r.venueId) : null;
+      if(!v || (v.city||'').trim() !== hapicaListState.city) return false;
+    }
+    return true;
+  });
+
+  const totalCount = filtered.reduce((s,e)=>s+Number(e.count||0),0);
+  const totalMoney = filtered.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0),0);
+
+  // 大カテゴリごとにグループ化（未分類は最後に表示）
+  const groups = new Map();
+  filtered.forEach(r=>{
+    const key = r.categoryMajorId || '__none__';
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  const orderedKeys = majorCategories.map(m=>m.id).filter(id=>groups.has(id));
+  groups.forEach((v,k)=>{ if(k!=='__none__' && !orderedKeys.includes(k)) orderedKeys.push(k); });
+  if(groups.has('__none__')) orderedKeys.push('__none__');
+
+  const groupCardsHtml = orderedKeys.map(key=>{
+    const list = groups.get(key).slice().sort((a,b)=>
+      hapicaListState.sort==='desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
+    );
+    const majorCat = key!=='__none__' ? findMajorCategory(key) : null;
+    const title = majorCat ? majorCat.name : '未分類';
+    const groupCount = list.reduce((s,e)=>s+Number(e.count||0),0);
+    const groupMoney = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0),0);
+
+    const rowsHtml = list.map(e=>{
+      const venue = e.venueId ? findVenue(e.venueId) : null;
+      const venueLabel = venue ? escapeHtml(venue.name) + (venue.city ? `（${escapeHtml(venue.city)}）` : '') : (e.location ? escapeHtml(e.location) : '－');
+      const minorCat = e.categoryMinorId ? findMinorCategory(e.categoryMinorId) : null;
+      const minorLabel = minorCat ? escapeHtml(minorCat.name) : '－';
+      const kindLabel = e.hapicaCategory ? escapeHtml(e.hapicaCategory) : '－';
+      const money = Number(e.count||0) * Number(e.unitPrice||0);
+      return `<tr>
+        <td>${e.date}</td>
+        <td>${venueLabel}</td>
+        <td>${minorLabel}</td>
+        <td>${escapeHtml(e.event||'－')}</td>
+        <td>${kindLabel}</td>
+        <td>${formatNumber(e.count)}</td>
+        <td>${formatNumber(money)}</td>
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="card">
+        <h2>${escapeHtml(title)}</h2>
+        <p class="hint">該当 ${list.length}件 ・ 合計 ${formatNumber(groupCount)} ・ 合計金額 ${formatNumber(groupMoney)}</p>
+        <div class="list-table-wrap">
+          <table class="breakdown list-table">
+            <thead><tr><th>日付</th><th>会場</th><th>小カテゴリ</th><th>イベント名</th><th>種類</th><th>枚数</th><th>金額</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="card">
+      <h2>ハピカ一覧（カテゴリ別）</h2>
+      <div class="agg-controls">
+        <select id="hapicaListVenue">
+          <option value="all" ${hapicaListState.venueId==='all'?'selected':''}>すべての会場</option>
+          ${venueOptions}
+        </select>
+        <select id="hapicaListCity">
+          <option value="all" ${hapicaListState.city==='all'?'selected':''}>すべての都市</option>
+          ${cityOptions}
+        </select>
+        <select id="hapicaListSort">
+          <option value="desc" ${hapicaListState.sort==='desc'?'selected':''}>新しい順</option>
+          <option value="asc" ${hapicaListState.sort==='asc'?'selected':''}>古い順</option>
+        </select>
+      </div>
+      <p class="hint">全体：該当 ${filtered.length}件 ・ 合計 ${formatNumber(totalCount)} ・ 合計金額 ${formatNumber(totalMoney)}</p>
+    </div>
+    ${groupCardsHtml || '<div class="card"><p class="empty-msg">条件に合う記録がありません。</p></div>'}
+  `;
+}
+
+function attachHapicaListEvents(){
+  const app = document.getElementById('app');
+  app.querySelector('#hapicaListVenue').addEventListener('change', (ev)=>{ hapicaListState.venueId = ev.target.value; renderMain(); });
+  app.querySelector('#hapicaListCity').addEventListener('change', (ev)=>{ hapicaListState.city = ev.target.value; renderMain(); });
+  app.querySelector('#hapicaListSort').addEventListener('change', (ev)=>{ hapicaListState.sort = ev.target.value; renderMain(); });
 }
 
 /* =========================================================
