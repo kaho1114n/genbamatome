@@ -278,8 +278,9 @@ const TYPE_CONFIG = {
   }
 };
 const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
-const DEFAULT_HAPICA_KINDS = ['猫耳','目つむり','その他'];
+const DEFAULT_HAPICA_KINDS = [];
 const LEGACY_HAPICA_KIND_MAP = { nekomimi: '猫耳', metsumuri: '目つむり', other: 'その他' };
+const LEGACY_DEFAULT_KIND_NAMES = ['猫耳', '目つむり', 'その他'];
 
 /* =========================================================
    ストレージ
@@ -320,6 +321,13 @@ function loadStore(){
       }
       return r;
     });
+
+    // 以前の初期設定だった「猫耳／目つむり／その他」は、実際の記録で
+    // 使われていなければ選択肢から取り除く（ユーザーが追加した種類は残す）
+    const usedKindNames = new Set(
+      recordsList.filter(r => r.type==='hapica' && r.hapicaCategory).map(r => r.hapicaCategory)
+    );
+    hapicaKinds = hapicaKinds.filter(k => !LEGACY_DEFAULT_KIND_NAMES.includes(k) || usedKindNames.has(k));
 
     return {
       records: recordsList,
@@ -462,6 +470,27 @@ function renderMain(){
   }else if(state.tab === 'list'){
     app.innerHTML = renderListTabHtml();
     attachListEvents();
+  }
+}
+
+// renderMain()は画面全体を作り直すため、そのまま呼ぶとテキスト入力中の
+// フォーカスが外れてスマホのキーボードが閉じてしまう。
+// 入力欄からの呼び出しはこちらでフォーカス位置を保ったまま再描画する。
+function renderMainKeepFocus(){
+  const active = document.activeElement;
+  let focusInfo = null;
+  if(active && active.id && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')){
+    focusInfo = { id: active.id, selStart: active.selectionStart, selEnd: active.selectionEnd };
+  }
+  renderMain();
+  if(focusInfo){
+    const el = document.getElementById(focusInfo.id);
+    if(el){
+      el.focus();
+      if(typeof el.setSelectionRange === 'function'){
+        try{ el.setSelectionRange(focusInfo.selStart, focusInfo.selEnd); }catch(e){}
+      }
+    }
   }
 }
 
@@ -615,14 +644,25 @@ function renderDayPanelHtml(type, dateStr){
     </div>` : '';
 
   const defaultHapicaKind = editingEntry ? (editingEntry.hapicaCategory || '')
-    : (lastSetting ? (lastSetting.hapicaCategory || '') : '');
-  const hapicaKindHtml = cfg.hasKind ? `
+    : (lastSetting ? (lastSetting.hapicaCategory || '') : (hapicaKinds[0] || ''));
+  const hapicaKindHtml = cfg.hasKind ? (hapicaKinds.length > 0 ? `
     <label>${cfg.kindLabel}
-      <input type="text" name="hapicaCategory" list="hapicaKindList" value="${escapeHtml(defaultHapicaKind)}" placeholder="例：猫耳">
-    </label>
-    <datalist id="hapicaKindList">
-      ${hapicaKinds.map(k=>`<option value="${escapeHtml(k)}"></option>`).join('')}
-    </datalist>` : '';
+      <select name="hapicaCategory" data-hapica-kind-select>
+        ${hapicaKinds.map(k=>`<option value="${escapeHtml(k)}" ${defaultHapicaKind===k?'selected':''}>${escapeHtml(k)}</option>`).join('')}
+      </select>
+    </label>` : `
+    <label>${cfg.kindLabel}
+      <select name="hapicaCategory" data-hapica-kind-select disabled>
+        <option value="">まだ種類が登録されていません</option>
+      </select>
+    </label>`) : '';
+  const hapicaKindAddHtml = cfg.hasKind ? `
+    <div class="row">
+      <label>新しい種類を追加
+        <input type="text" data-new-hapica-kind placeholder="例：限定衣装">
+      </label>
+      <button type="button" class="advance-toggle-btn" data-add-hapica-kind style="align-self:flex-end;">＋ 種類を追加</button>
+    </div>` : '';
 
   const secondsFieldHtml = cfg.hasSeconds ? `
     <label>1枚あたりの秒数
@@ -724,7 +764,7 @@ function renderDayPanelHtml(type, dateStr){
         </div>
         ${presetPriceHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
-        ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div><p class="hint">既存の種類を選ぶか、新しい種類名を入力すると次回から選択肢に追加されます。</p>` : ''}
+        ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div>${hapicaKindAddHtml}` : ''}
         ${advanceHtml}
         <button type="submit" class="submit-btn">${editingEntry ? '更新する' : '追加する'}</button>
         ${editingEntry ? '<button type="button" class="cancel-edit" data-cancel-edit data-type="'+type+'">編集をやめる</button>' : ''}
@@ -876,6 +916,26 @@ function attachRecordTabEvents(type){
     });
   });
 
+  // ハピカの種類を新規追加
+  app.querySelectorAll('[data-add-hapica-kind]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      const input = form.querySelector('[data-new-hapica-kind]');
+      const name = (input.value || '').trim();
+      if(!name){ alert('新しい種類名を入力してください。'); return; }
+      if(!hapicaKinds.includes(name)){
+        hapicaKinds.push(name);
+        saveData();
+      }
+      const kindSelect = form.querySelector('[data-hapica-kind-select]');
+      if(kindSelect){
+        kindSelect.innerHTML = hapicaKinds.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join('');
+        kindSelect.value = name;
+      }
+      input.value = '';
+    });
+  });
+
   // フォーム送信
   const form = app.querySelector('form.entry-form');
   if(form){
@@ -904,9 +964,10 @@ function attachRecordTabEvents(type){
         entry.unitSeconds = Number(fd.get('unitSeconds')) || 0;
       }
       if(cfg.hasKind){
-        const kindValue = (fd.get('hapicaCategory')||'').trim();
-        entry.hapicaCategory = kindValue || 'その他';
-        if(kindValue && !hapicaKinds.includes(kindValue)){
+        const kindSelect = form.querySelector('[name=hapicaCategory]');
+        const kindValue = (kindSelect && kindSelect.value) ? kindSelect.value : 'その他';
+        entry.hapicaCategory = kindValue;
+        if(!hapicaKinds.includes(kindValue)){
           hapicaKinds.push(kindValue);
         }
       }
@@ -1232,6 +1293,7 @@ function renderVenuesTabHtml(){
       <h2>会場一覧</h2>
       <div class="agg-controls">
         <input type="text" id="venueSearch" placeholder="会場名・都市名で検索" value="${escapeHtml(venueState.search)}">
+        <button type="button" id="venueSearchBtn" class="submit-btn">検索</button>
       </div>
       <p class="hint">該当 ${filtered.length}件</p>
       ${listHtml}
@@ -1259,11 +1321,21 @@ function attachVenuesEvents(){
   const app = document.getElementById('app');
 
   const searchInput = app.querySelector('#venueSearch');
+  const searchBtn = app.querySelector('#venueSearchBtn');
+  const runVenueSearch = ()=>{
+    venueState.search = searchInput.value;
+    venueState.page = 1;
+    renderMain();
+  };
+  if(searchBtn){
+    searchBtn.addEventListener('click', runVenueSearch);
+  }
   if(searchInput){
-    searchInput.addEventListener('input', ()=>{
-      venueState.search = searchInput.value;
-      venueState.page = 1;
-      renderMain();
+    searchInput.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        runVenueSearch();
+      }
     });
   }
   app.querySelectorAll('[data-page-prev="venue"]').forEach(btn=>{
@@ -1389,6 +1461,7 @@ function renderCategoriesTabHtml(){
       <h2>大カテゴリ一覧</h2>
       <div class="agg-controls">
         <input type="text" id="majorCategorySearch" placeholder="大カテゴリ名で検索" value="${escapeHtml(categoryState.majorSearch)}">
+        <button type="button" id="majorCategorySearchBtn" class="submit-btn">検索</button>
       </div>
       <p class="hint">該当 ${majorFiltered.length}件</p>
       ${majorListHtml}
@@ -1411,6 +1484,7 @@ function renderCategoriesTabHtml(){
       <h2>小カテゴリ一覧</h2>
       <div class="agg-controls">
         <input type="text" id="minorCategorySearch" placeholder="小カテゴリ名で検索" value="${escapeHtml(categoryState.minorSearch)}">
+        <button type="button" id="minorCategorySearchBtn" class="submit-btn">検索</button>
       </div>
       <p class="hint">該当 ${minorFiltered.length}件</p>
       ${minorListHtml}
@@ -1442,11 +1516,21 @@ function attachCategoriesEvents(){
 
   // 大カテゴリ 検索・ページネーション
   const majorSearchInput = app.querySelector('#majorCategorySearch');
+  const majorSearchBtn = app.querySelector('#majorCategorySearchBtn');
+  const runMajorSearch = ()=>{
+    categoryState.majorSearch = majorSearchInput.value;
+    categoryState.majorPage = 1;
+    renderMain();
+  };
+  if(majorSearchBtn){
+    majorSearchBtn.addEventListener('click', runMajorSearch);
+  }
   if(majorSearchInput){
-    majorSearchInput.addEventListener('input', ()=>{
-      categoryState.majorSearch = majorSearchInput.value;
-      categoryState.majorPage = 1;
-      renderMain();
+    majorSearchInput.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        runMajorSearch();
+      }
     });
   }
   app.querySelectorAll('[data-page-prev="major"]').forEach(btn=>{
@@ -1514,11 +1598,21 @@ function attachCategoriesEvents(){
 
   // 小カテゴリ 検索・ページネーション
   const minorSearchInput = app.querySelector('#minorCategorySearch');
+  const minorSearchBtn = app.querySelector('#minorCategorySearchBtn');
+  const runMinorSearch = ()=>{
+    categoryState.minorSearch = minorSearchInput.value;
+    categoryState.minorPage = 1;
+    renderMain();
+  };
+  if(minorSearchBtn){
+    minorSearchBtn.addEventListener('click', runMinorSearch);
+  }
   if(minorSearchInput){
-    minorSearchInput.addEventListener('input', ()=>{
-      categoryState.minorSearch = minorSearchInput.value;
-      categoryState.minorPage = 1;
-      renderMain();
+    minorSearchInput.addEventListener('keydown', (ev)=>{
+      if(ev.key === 'Enter'){
+        ev.preventDefault();
+        runMinorSearch();
+      }
     });
   }
   app.querySelectorAll('[data-page-prev="minor"]').forEach(btn=>{
