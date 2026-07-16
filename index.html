@@ -96,7 +96,11 @@
   .card h3{margin:0 0 8px;font-size:13.5px;color:var(--ink-soft);font-weight:700;}
 
   .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
-  .cal-header .month-label{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;}
+  .cal-header .month-label{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;display:flex;gap:6px;}
+  .cal-header .month-label select{
+    font-weight:700;font-size:14px;color:var(--ink);border:1px solid var(--paper-line);border-radius:6px;
+    padding:4px 4px;background:#fff;font-variant-numeric:tabular-nums;
+  }
   .cal-header button{
     background:none;border:1px solid var(--paper-line);border-radius:8px;
     width:32px;height:32px;font-size:15px;color:var(--ink);cursor:pointer;
@@ -216,9 +220,7 @@
   .hint{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}
   .empty-msg{color:var(--ink-soft);font-size:12.5px;padding:10px 0;}
   .cat-tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;color:#fff;margin-right:4px;}
-  .cat-nekomimi{background:#c98a2c;}
-  .cat-metsumuri{background:#7a5fc4;}
-  .cat-other{background:#8d8d8d;}
+  .cat-hapica-kind{background:var(--mustard);}
 </style>
 </head>
 <body>
@@ -269,13 +271,15 @@ const TYPE_CONFIG = {
   'hapica': {
     label: 'ハピカ',
     hasSeconds: false,
-    hasCategory: true,
+    hasKind: true,
+    kindLabel: 'ハピカの種類',
     defaultPrice: 500,
-    pricePresets: [],
-    categories: { nekomimi: '猫耳', metsumuri: '目つむり', other: 'その他' }
+    pricePresets: []
   }
 };
 const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
+const DEFAULT_HAPICA_KINDS = ['猫耳','目つむり','その他'];
+const LEGACY_HAPICA_KIND_MAP = { nekomimi: '猫耳', metsumuri: '目つむり', other: 'その他' };
 
 /* =========================================================
    ストレージ
@@ -283,15 +287,16 @@ const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
 function loadStore(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return { records: [], venues: [], majorCategories: [], minorCategories: [] };
+    if(!raw) return { records: [], venues: [], majorCategories: [], minorCategories: [], hapicaKinds: DEFAULT_HAPICA_KINDS.slice() };
     const parsed = JSON.parse(raw);
     if(Array.isArray(parsed)){
       // 旧形式（記録の配列のみ）からの移行
-      return { records: parsed, venues: [], majorCategories: [], minorCategories: [] };
+      return { records: parsed, venues: [], majorCategories: [], minorCategories: [], hapicaKinds: DEFAULT_HAPICA_KINDS.slice() };
     }
     let majorCategories = Array.isArray(parsed.majorCategories) ? parsed.majorCategories : [];
     let minorCategories = Array.isArray(parsed.minorCategories) ? parsed.minorCategories : [];
     let recordsList = Array.isArray(parsed.records) ? parsed.records : [];
+    let hapicaKinds = Array.isArray(parsed.hapicaKinds) ? parsed.hapicaKinds.slice() : DEFAULT_HAPICA_KINDS.slice();
 
     // 旧バージョン（大小の区別がないフラットなカテゴリ）からの移行
     if(majorCategories.length===0 && Array.isArray(parsed.eventCategories) && parsed.eventCategories.length>0){
@@ -306,20 +311,31 @@ function loadStore(){
       });
     }
 
+    // 旧バージョン（固定キーのハピカ種類）からの移行
+    recordsList = recordsList.map(r=>{
+      if(r.type==='hapica' && r.hapicaCategory && LEGACY_HAPICA_KIND_MAP[r.hapicaCategory]){
+        const clone = Object.assign({}, r);
+        clone.hapicaCategory = LEGACY_HAPICA_KIND_MAP[r.hapicaCategory];
+        return clone;
+      }
+      return r;
+    });
+
     return {
       records: recordsList,
       venues: Array.isArray(parsed.venues) ? parsed.venues : [],
       majorCategories,
-      minorCategories
+      minorCategories,
+      hapicaKinds
     };
   }catch(e){
     console.error('load error', e);
-    return { records: [], venues: [], majorCategories: [], minorCategories: [] };
+    return { records: [], venues: [], majorCategories: [], minorCategories: [], hapicaKinds: DEFAULT_HAPICA_KINDS.slice() };
   }
 }
 function saveData(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ records, venues, majorCategories, minorCategories }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ records, venues, majorCategories, minorCategories, hapicaKinds }));
   }catch(e){
     alert('保存に失敗しました。ブラウザのストレージが利用できない可能性があります。');
     console.error(e);
@@ -331,6 +347,7 @@ let records = _store.records;
 let venues = _store.venues;
 let majorCategories = _store.majorCategories;
 let minorCategories = _store.minorCategories;
+let hapicaKinds = _store.hapicaKinds;
 
 function uid(){
   return 'r_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8);
@@ -358,8 +375,8 @@ TYPE_ORDER.forEach(t=>{
 
 const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
 
-const venueState = { editingId: null };
-const categoryState = { majorEditingId: null, minorEditingId: null };
+const venueState = { editingId: null, page: 1, pageSize: 20, search: '' };
+const categoryState = { majorEditingId: null, minorEditingId: null, majorPage: 1, minorPage: 1, pageSize: 20, majorSearch: '', minorSearch: '' };
 const listState = { type: 'all', venueId: 'all', majorId: 'all', minorId: 'all', sort: 'desc', page: 1, pageSize: 20 };
 
 /* =========================================================
@@ -380,6 +397,21 @@ function escapeHtml(str){
   return String(str).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+function paginate(list, page, pageSize){
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return { items: list.slice(start, start + pageSize), totalPages, page: safePage };
+}
+function paginationControlsHtml(prefix, page, totalPages){
+  return `
+    <div class="pagination">
+      <button type="button" data-page-prev="${prefix}" ${page<=1?'disabled':''}>＜ 前へ</button>
+      <span class="page-info">${page} / ${totalPages} ページ</span>
+      <button type="button" data-page-next="${prefix}" ${page>=totalPages?'disabled':''}>次へ ＞</button>
+    </div>
+  `;
 }
 
 /* =========================================================
@@ -495,11 +527,20 @@ function renderCalendarHtml(type, y, m){
   }
 
   const monthLabel = y + '年 ' + (m+1) + '月';
+  const yearOptions = [];
+  for(let yr = today.getFullYear()-12; yr <= today.getFullYear()+2; yr++) yearOptions.push(yr);
 
   return `
     <div class="cal-header">
       <button data-cal-nav="prev" data-type="${type}">＜</button>
-      <span class="month-label">${monthLabel}</span>
+      <span class="month-label">
+        <select data-cal-year="${type}">
+          ${yearOptions.map(yr=>`<option value="${yr}" ${yr===y?'selected':''}>${yr}年</option>`).join('')}
+        </select>
+        <select data-cal-month="${type}">
+          ${Array.from({length:12},(_,i)=>i+1).map(mm=>`<option value="${mm-1}" ${mm-1===m?'selected':''}>${mm}月</option>`).join('')}
+        </select>
+      </span>
       <button data-cal-nav="next" data-type="${type}">＞</button>
     </div>
     <table class="calendar">
@@ -535,9 +576,9 @@ function renderDayPanelHtml(type, dateStr){
       let line2 = '';
       if(cfg.hasSeconds){
         line2 = `${e.unitPrice}円/枚 ・ ${e.unitSeconds}秒/枚`;
-      }else if(cfg.hasCategory){
-        const catLabel = cfg.categories[e.hapicaCategory] || 'その他';
-        line2 = `<span class="cat-tag cat-${e.hapicaCategory}">${catLabel}</span>${e.unitPrice}円/枚`;
+      }else if(cfg.hasKind){
+        const catLabel = e.hapicaCategory || 'その他';
+        line2 = `<span class="cat-tag cat-hapica-kind">${escapeHtml(catLabel)}</span>${e.unitPrice}円/枚`;
       }
       const advLine = hasAdv
         ? `<div class="line2"><span class="cat-tag cat-advance">前売り</span>${e.advanceCount}枚 ・ ${e.advancePrice}円/枚（手数料+${e.advanceFee}円込み）</div>`
@@ -573,14 +614,15 @@ function renderDayPanelHtml(type, dateStr){
       ${cfg.secondsPresets.map(s=>`<button type="button" data-preset-seconds="${s}" class="${Number(defaultSeconds)===s?'active':''}">${s}秒</button>`).join('')}
     </div>` : '';
 
-  const hapicaKindHtml = cfg.hasCategory ? `
-    <label>ハピカの種類
-      <select name="hapicaCategory">
-        ${Object.entries(cfg.categories).map(([k,v])=>
-          `<option value="${k}" ${editingEntry && editingEntry.hapicaCategory===k ? 'selected':''}>${v}</option>`
-        ).join('')}
-      </select>
-    </label>` : '';
+  const defaultHapicaKind = editingEntry ? (editingEntry.hapicaCategory || '')
+    : (lastSetting ? (lastSetting.hapicaCategory || '') : '');
+  const hapicaKindHtml = cfg.hasKind ? `
+    <label>${cfg.kindLabel}
+      <input type="text" name="hapicaCategory" list="hapicaKindList" value="${escapeHtml(defaultHapicaKind)}" placeholder="例：猫耳">
+    </label>
+    <datalist id="hapicaKindList">
+      ${hapicaKinds.map(k=>`<option value="${escapeHtml(k)}"></option>`).join('')}
+    </datalist>` : '';
 
   const secondsFieldHtml = cfg.hasSeconds ? `
     <label>1枚あたりの秒数
@@ -682,7 +724,7 @@ function renderDayPanelHtml(type, dateStr){
         </div>
         ${presetPriceHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
-        ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div>` : ''}
+        ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div><p class="hint">既存の種類を選ぶか、新しい種類名を入力すると次回から選択肢に追加されます。</p>` : ''}
         ${advanceHtml}
         <button type="submit" class="submit-btn">${editingEntry ? '更新する' : '追加する'}</button>
         ${editingEntry ? '<button type="button" class="cancel-edit" data-cancel-edit data-type="'+type+'">編集をやめる</button>' : ''}
@@ -707,6 +749,22 @@ function attachRecordTabEvents(type){
       renderMain();
     });
   });
+
+  // カレンダー 年・月の直接選択
+  const calYearSel = app.querySelector(`[data-cal-year="${type}"]`);
+  if(calYearSel){
+    calYearSel.addEventListener('change', ()=>{
+      state.cal[type] = { y: Number(calYearSel.value), m: state.cal[type].m };
+      renderMain();
+    });
+  }
+  const calMonthSel = app.querySelector(`[data-cal-month="${type}"]`);
+  if(calMonthSel){
+    calMonthSel.addEventListener('change', ()=>{
+      state.cal[type] = { y: state.cal[type].y, m: Number(calMonthSel.value) };
+      renderMain();
+    });
+  }
 
   // 日付選択
   app.querySelectorAll('td[data-date]').forEach(td=>{
@@ -845,8 +903,12 @@ function attachRecordTabEvents(type){
       if(cfg.hasSeconds){
         entry.unitSeconds = Number(fd.get('unitSeconds')) || 0;
       }
-      if(cfg.hasCategory){
-        entry.hapicaCategory = fd.get('hapicaCategory') || 'other';
+      if(cfg.hasKind){
+        const kindValue = (fd.get('hapicaCategory')||'').trim();
+        entry.hapicaCategory = kindValue || 'その他';
+        if(kindValue && !hapicaKinds.includes(kindValue)){
+          hapicaKinds.push(kindValue);
+        }
       }
       if(cfg.hasAdvance){
         const isAdvance = fd.get('isAdvance') === '1';
@@ -1012,7 +1074,8 @@ function attachDataEvents(){
       records: records,
       venues: venues,
       majorCategories: majorCategories,
-      minorCategories: minorCategories
+      minorCategories: minorCategories,
+      hapicaKinds: hapicaKinds
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1042,6 +1105,7 @@ function attachDataEvents(){
     venues = [];
     majorCategories = [];
     minorCategories = [];
+    hapicaKinds = DEFAULT_HAPICA_KINDS.slice();
     saveData();
     renderMain();
   });
@@ -1059,6 +1123,7 @@ function handleImportFile(file, mode){
       const incomingMajor = Array.isArray(parsed.majorCategories) ? parsed.majorCategories
         : (Array.isArray(parsed.eventCategories) ? parsed.eventCategories : []);
       const incomingMinor = Array.isArray(parsed.minorCategories) ? parsed.minorCategories : [];
+      const incomingHapicaKinds = Array.isArray(parsed.hapicaKinds) ? parsed.hapicaKinds : [];
 
       // 最低限のバリデーション
       const cleaned = incoming.filter(r => r && r.type && r.date && TYPE_CONFIG[r.type]).map(r=>({
@@ -1095,6 +1160,7 @@ function handleImportFile(file, mode){
         venues = cleanedVenues;
         majorCategories = cleanedMajor;
         minorCategories = cleanedMinor;
+        hapicaKinds = incomingHapicaKinds.length > 0 ? incomingHapicaKinds.slice() : DEFAULT_HAPICA_KINDS.slice();
       }else{
         // 追加：同じidが既にあれば上書き、なければ追加
         cleaned.forEach(nr=>{
@@ -1112,6 +1178,9 @@ function handleImportFile(file, mode){
         cleanedMinor.forEach(nc=>{
           const idx = minorCategories.findIndex(c=>c.id===nc.id);
           if(idx>=0) minorCategories[idx] = nc; else minorCategories.push(nc);
+        });
+        incomingHapicaKinds.forEach(k=>{
+          if(k && !hapicaKinds.includes(k)) hapicaKinds.push(k);
         });
       }
       saveData();
@@ -1132,9 +1201,17 @@ function renderVenuesTabHtml(){
   const editingId = venueState.editingId;
   const editing = editingId ? findVenue(editingId) : null;
 
-  const listHtml = venues.length === 0
-    ? '<p class="empty-msg">まだ会場が登録されていません。下のフォームから追加してください。</p>'
-    : venues.map(v=>{
+  const search = venueState.search.trim().toLowerCase();
+  const filtered = search
+    ? venues.filter(v => (v.name||'').toLowerCase().includes(search) || (v.city||'').toLowerCase().includes(search))
+    : venues;
+
+  const { items: pageItems, totalPages, page } = paginate(filtered, venueState.page, venueState.pageSize);
+  venueState.page = page;
+
+  const listHtml = filtered.length === 0
+    ? `<p class="empty-msg">${venues.length === 0 ? 'まだ会場が登録されていません。下のフォームから追加してください。' : '検索条件に合う会場がありません。'}</p>`
+    : pageItems.map(v=>{
         const useCount = records.filter(r=>r.venueId===v.id).length;
         return `
           <div class="entry-row">
@@ -1153,7 +1230,12 @@ function renderVenuesTabHtml(){
   return `
     <div class="card">
       <h2>会場一覧</h2>
+      <div class="agg-controls">
+        <input type="text" id="venueSearch" placeholder="会場名・都市名で検索" value="${escapeHtml(venueState.search)}">
+      </div>
+      <p class="hint">該当 ${filtered.length}件</p>
       ${listHtml}
+      ${filtered.length > 0 ? paginationControlsHtml('venue', page, totalPages) : ''}
     </div>
     <div class="card">
       <h3>${editing ? '会場を編集' : '会場を追加'}</h3>
@@ -1175,6 +1257,21 @@ function renderVenuesTabHtml(){
 
 function attachVenuesEvents(){
   const app = document.getElementById('app');
+
+  const searchInput = app.querySelector('#venueSearch');
+  if(searchInput){
+    searchInput.addEventListener('input', ()=>{
+      venueState.search = searchInput.value;
+      venueState.page = 1;
+      renderMain();
+    });
+  }
+  app.querySelectorAll('[data-page-prev="venue"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ venueState.page -= 1; renderMain(); });
+  });
+  app.querySelectorAll('[data-page-next="venue"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ venueState.page += 1; renderMain(); });
+  });
 
   app.querySelectorAll('[data-venue-edit]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1231,9 +1328,23 @@ function renderCategoriesTabHtml(){
   const minorEditingId = categoryState.minorEditingId;
   const minorEditing = minorEditingId ? findMinorCategory(minorEditingId) : null;
 
-  const majorListHtml = majorCategories.length === 0
-    ? '<p class="empty-msg">まだ大カテゴリが登録されていません。下のフォームから追加してください。</p>'
-    : majorCategories.map(m=>{
+  const majorSearch = categoryState.majorSearch.trim().toLowerCase();
+  const majorFiltered = majorSearch
+    ? majorCategories.filter(m => (m.name||'').toLowerCase().includes(majorSearch))
+    : majorCategories;
+  const majorPageResult = paginate(majorFiltered, categoryState.majorPage, categoryState.pageSize);
+  categoryState.majorPage = majorPageResult.page;
+
+  const minorSearch = categoryState.minorSearch.trim().toLowerCase();
+  const minorFiltered = minorSearch
+    ? minorCategories.filter(mc => (mc.name||'').toLowerCase().includes(minorSearch))
+    : minorCategories;
+  const minorPageResult = paginate(minorFiltered, categoryState.minorPage, categoryState.pageSize);
+  categoryState.minorPage = minorPageResult.page;
+
+  const majorListHtml = majorFiltered.length === 0
+    ? `<p class="empty-msg">${majorCategories.length === 0 ? 'まだ大カテゴリが登録されていません。下のフォームから追加してください。' : '検索条件に合う大カテゴリがありません。'}</p>`
+    : majorPageResult.items.map(m=>{
         const minorCount = minorCategories.filter(mc=>mc.majorId===m.id).length;
         const useCount = records.filter(r=>r.categoryMajorId===m.id).length;
         return `
@@ -1250,9 +1361,9 @@ function renderCategoriesTabHtml(){
         `;
       }).join('');
 
-  const minorListHtml = minorCategories.length === 0
-    ? '<p class="empty-msg">まだ小カテゴリが登録されていません。</p>'
-    : minorCategories.map(mc=>{
+  const minorListHtml = minorFiltered.length === 0
+    ? `<p class="empty-msg">${minorCategories.length === 0 ? 'まだ小カテゴリが登録されていません。' : '検索条件に合う小カテゴリがありません。'}</p>`
+    : minorPageResult.items.map(mc=>{
         const parent = findMajorCategory(mc.majorId);
         const useCount = records.filter(r=>r.categoryMinorId===mc.id).length;
         return `
@@ -1276,7 +1387,12 @@ function renderCategoriesTabHtml(){
   return `
     <div class="card">
       <h2>大カテゴリ一覧</h2>
+      <div class="agg-controls">
+        <input type="text" id="majorCategorySearch" placeholder="大カテゴリ名で検索" value="${escapeHtml(categoryState.majorSearch)}">
+      </div>
+      <p class="hint">該当 ${majorFiltered.length}件</p>
       ${majorListHtml}
+      ${majorFiltered.length > 0 ? paginationControlsHtml('major', majorPageResult.page, majorPageResult.totalPages) : ''}
     </div>
     <div class="card">
       <h3>${majorEditing ? '大カテゴリを編集' : '大カテゴリを追加'}</h3>
@@ -1293,7 +1409,12 @@ function renderCategoriesTabHtml(){
 
     <div class="card">
       <h2>小カテゴリ一覧</h2>
+      <div class="agg-controls">
+        <input type="text" id="minorCategorySearch" placeholder="小カテゴリ名で検索" value="${escapeHtml(categoryState.minorSearch)}">
+      </div>
+      <p class="hint">該当 ${minorFiltered.length}件</p>
       ${minorListHtml}
+      ${minorFiltered.length > 0 ? paginationControlsHtml('minor', minorPageResult.page, minorPageResult.totalPages) : ''}
     </div>
     <div class="card">
       <h3>${minorEditing ? '小カテゴリを編集' : '小カテゴリを追加'}</h3>
@@ -1318,6 +1439,22 @@ function renderCategoriesTabHtml(){
 
 function attachCategoriesEvents(){
   const app = document.getElementById('app');
+
+  // 大カテゴリ 検索・ページネーション
+  const majorSearchInput = app.querySelector('#majorCategorySearch');
+  if(majorSearchInput){
+    majorSearchInput.addEventListener('input', ()=>{
+      categoryState.majorSearch = majorSearchInput.value;
+      categoryState.majorPage = 1;
+      renderMain();
+    });
+  }
+  app.querySelectorAll('[data-page-prev="major"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ categoryState.majorPage -= 1; renderMain(); });
+  });
+  app.querySelectorAll('[data-page-next="major"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ categoryState.majorPage += 1; renderMain(); });
+  });
 
   // 大カテゴリ
   app.querySelectorAll('[data-major-edit]').forEach(btn=>{
@@ -1374,6 +1511,22 @@ function attachCategoriesEvents(){
       renderMain();
     });
   }
+
+  // 小カテゴリ 検索・ページネーション
+  const minorSearchInput = app.querySelector('#minorCategorySearch');
+  if(minorSearchInput){
+    minorSearchInput.addEventListener('input', ()=>{
+      categoryState.minorSearch = minorSearchInput.value;
+      categoryState.minorPage = 1;
+      renderMain();
+    });
+  }
+  app.querySelectorAll('[data-page-prev="minor"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ categoryState.minorPage -= 1; renderMain(); });
+  });
+  app.querySelectorAll('[data-page-next="minor"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{ categoryState.minorPage += 1; renderMain(); });
+  });
 
   // 小カテゴリ
   app.querySelectorAll('[data-minor-edit]').forEach(btn=>{
