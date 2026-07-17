@@ -189,6 +189,12 @@
   }
   .cancel-edit{background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;cursor:pointer;margin-left:10px;}
 
+  .chart-wrap{
+    background:#fff;border:1px solid var(--paper-line);border-radius:10px;
+    padding:10px 6px 4px;margin-bottom:14px;
+  }
+  .count-chart-svg{width:100%;height:auto;display:block;}
+
   .group-title-row{
     display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;
   }
@@ -1057,6 +1063,7 @@ function renderAggTabHtml(){
 
   const filtered = getFilteredRecords();
   const totals = computeTotals(filtered);
+  const series = computeCountSeries();
 
   return `
     <div class="card">
@@ -1069,6 +1076,11 @@ function renderAggTabHtml(){
         </select>
         <select id="aggYear" style="${aggState.mode==='all'?'display:none':''}">${yearOptions}</select>
         <select id="aggMonth" style="${aggState.mode==='month'?'':'display:none'}">${monthOptions}</select>
+      </div>
+
+      <h3>枚数の推移（${escapeHtml(series.unitLabel)}別・全種類合計）</h3>
+      <div class="chart-wrap">
+        ${renderBarChartSvg(series.labels, series.values)}
       </div>
 
       <h3>2ショット・手売り・握手（合計）</h3>
@@ -1101,6 +1113,90 @@ function renderAggTabHtml(){
         </tbody>
       </table>
     </div>
+  `;
+}
+
+function computeCountSeries(){
+  if(aggState.mode === 'month'){
+    const y = aggState.y, m = aggState.m;
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const labels = [];
+    const values = new Array(daysInMonth).fill(0);
+    for(let d=1; d<=daysInMonth; d++) labels.push(String(d));
+    records.forEach(r=>{
+      const ry = Number(r.date.slice(0,4)), rm = Number(r.date.slice(5,7)), rd = Number(r.date.slice(8,10));
+      if(ry===y && rm===m && rd>=1 && rd<=daysInMonth){
+        values[rd-1] += entryTotals(r).count;
+      }
+    });
+    return { labels, values, unitLabel: '日' };
+  }
+  if(aggState.mode === 'year'){
+    const y = aggState.y;
+    const labels = Array.from({length:12},(_,i)=>(i+1)+'月');
+    const values = new Array(12).fill(0);
+    records.forEach(r=>{
+      const ry = Number(r.date.slice(0,4)), rm = Number(r.date.slice(5,7));
+      if(ry===y && rm>=1 && rm<=12){
+        values[rm-1] += entryTotals(r).count;
+      }
+    });
+    return { labels, values, unitLabel: '月' };
+  }
+  // all
+  let years = Array.from(new Set(records.map(r=>r.date.slice(0,4)))).sort();
+  if(years.length===0) years.push(String(today.getFullYear()));
+  const values = years.map(()=>0);
+  records.forEach(r=>{
+    const idx = years.indexOf(r.date.slice(0,4));
+    if(idx>=0) values[idx] += entryTotals(r).count;
+  });
+  return { labels: years.map(y=>y+'年'), values, unitLabel: '年' };
+}
+
+function renderBarChartSvg(labels, values){
+  const w = 640, h = 200;
+  const paddingLeft = 34, paddingBottom = 26, paddingTop = 16, paddingRight = 10;
+  const chartW = w - paddingLeft - paddingRight;
+  const chartH = h - paddingTop - paddingBottom;
+  const n = Math.max(1, values.length);
+  const maxVal = Math.max(1, ...values);
+  const slot = chartW / n;
+  const barGap = slot > 10 ? 3 : 1;
+  const barW = Math.max(1.5, slot - barGap);
+  const showEvery = n <= 14 ? 1 : Math.ceil(n / 12);
+
+  let bars = '';
+  let labelsSvg = '';
+  values.forEach((v, i)=>{
+    const barH = maxVal > 0 ? (v / maxVal) * chartH : 0;
+    const x = paddingLeft + i * slot + barGap / 2;
+    const y = paddingTop + (chartH - barH);
+    bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0,barH).toFixed(1)}" fill="url(#barGrad)" rx="2"></rect>`;
+    if(i % showEvery === 0 || i === values.length - 1){
+      const lx = x + barW / 2;
+      labelsSvg += `<text x="${lx.toFixed(1)}" y="${h - 8}" font-size="9" fill="#565f77" text-anchor="middle">${escapeHtml(String(labels[i]))}</text>`;
+    }
+  });
+
+  if(values.every(v=>v===0)){
+    return `<p class="empty-msg">この期間の記録がありません。</p>`;
+  }
+
+  return `
+    <svg viewBox="0 0 ${w} ${h}" class="count-chart-svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#8a5fc2"/>
+          <stop offset="100%" stop-color="#6a3fa0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${paddingLeft}" y1="${paddingTop}" x2="${w-paddingRight}" y2="${paddingTop}" stroke="#dcd8c8" stroke-dasharray="3,3"/>
+      <text x="${paddingLeft-4}" y="${paddingTop+4}" font-size="9" fill="#565f77" text-anchor="end">${formatNumber(maxVal)}</text>
+      <line x1="${paddingLeft}" y1="${paddingTop+chartH}" x2="${w-paddingRight}" y2="${paddingTop+chartH}" stroke="#b7b3a2"/>
+      ${bars}
+      ${labelsSvg}
+    </svg>
   `;
 }
 
