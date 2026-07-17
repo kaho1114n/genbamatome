@@ -1166,6 +1166,8 @@ function renderPredictionCardHtml(){
         </select>
         <select id="predictDow">
           <option value="all" ${predictState.dow==='all'?'selected':''}>すべての曜日</option>
+          <option value="weekend" ${predictState.dow==='weekend'?'selected':''}>土日（土曜＋日曜）</option>
+          <option value="weekday" ${predictState.dow==='weekday'?'selected':''}>平日（月〜金）</option>
           ${dowOptions}
         </select>
         <select id="predictCity">
@@ -1190,8 +1192,14 @@ function computePrediction(){
   const matches = records.filter(r=>{
     if(predictState.type!=='all' && r.type!==predictState.type) return false;
     if(predictState.dow!=='all'){
-      const d = new Date(r.date + 'T00:00:00');
-      if(String(d.getDay()) !== predictState.dow) return false;
+      const dow = new Date(r.date + 'T00:00:00').getDay();
+      if(predictState.dow === 'weekend'){
+        if(dow !== 0 && dow !== 6) return false;
+      }else if(predictState.dow === 'weekday'){
+        if(dow === 0 || dow === 6) return false;
+      }else if(String(dow) !== predictState.dow){
+        return false;
+      }
     }
     if(predictState.city!=='all'){
       const v = r.venueId ? findVenue(r.venueId) : null;
