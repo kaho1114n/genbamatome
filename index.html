@@ -1143,15 +1143,32 @@ function computeCountSeries(){
     });
     return { labels, values, unitLabel: '月' };
   }
-  // all
-  let years = Array.from(new Set(records.map(r=>r.date.slice(0,4)))).sort();
-  if(years.length===0) years.push(String(today.getFullYear()));
-  const values = years.map(()=>0);
+  // 合計（全期間）：年単位ではなく、記録がある期間の月ごとに表示
+  if(records.length === 0){
+    const y = today.getFullYear(), m = today.getMonth() + 1;
+    return { labels: [`${y}年${m}月`], values: [0], unitLabel: '月' };
+  }
+  const sortedDates = records.map(r=>r.date).sort();
+  const firstDate = sortedDates[0];
+  const lastDate = sortedDates[sortedDates.length - 1];
+  let cy = Number(firstDate.slice(0,4)), cm = Number(firstDate.slice(5,7));
+  const endY = Number(lastDate.slice(0,4)), endM = Number(lastDate.slice(5,7));
+
+  const keys = [];
+  const labels = [];
+  while(cy < endY || (cy === endY && cm <= endM)){
+    keys.push(cy + '-' + pad2(cm));
+    labels.push(`${cy}年${cm}月`);
+    cm += 1;
+    if(cm > 12){ cm = 1; cy += 1; }
+  }
+  const values = keys.map(()=>0);
   records.forEach(r=>{
-    const idx = years.indexOf(r.date.slice(0,4));
+    const key = r.date.slice(0,7);
+    const idx = keys.indexOf(key);
     if(idx>=0) values[idx] += entryTotals(r).count;
   });
-  return { labels: years.map(y=>y+'年'), values, unitLabel: '年' };
+  return { labels, values, unitLabel: '月' };
 }
 
 function renderBarChartSvg(labels, values){
