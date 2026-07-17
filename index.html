@@ -421,6 +421,8 @@ TYPE_ORDER.forEach(t=>{
 });
 
 const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
+const predictState = { type: 'all', dow: 'all', city: 'all', majorId: 'all', minorId: 'all' };
+const DOW_LABELS = ['日','月','火','水','木','金','土'];
 
 const venueState = { editingId: null, page: 1, pageSize: 20, search: '' };
 const categoryState = { majorEditingId: null, minorEditingId: null, majorPage: 1, minorPage: 1, pageSize: 20, majorSearch: '', minorSearch: '' };
@@ -1113,7 +1115,121 @@ function renderAggTabHtml(){
         </tbody>
       </table>
     </div>
+
+    ${renderPredictionCardHtml()}
   `;
+}
+
+function renderPredictionCardHtml(){
+  const typeOptions = TYPE_ORDER.map(t=>`<option value="${t}" ${predictState.type===t?'selected':''}>${TYPE_CONFIG[t].label}</option>`).join('');
+  const dowOptions = DOW_LABELS.map((label,i)=>`<option value="${i}" ${predictState.dow===String(i)?'selected':''}>${label}曜日</option>`).join('');
+  const cityList = Array.from(new Set(venues.map(v=>(v.city||'').trim()).filter(c=>c))).sort((a,b)=>a.localeCompare(b,'ja'));
+  const cityOptions = cityList.map(c=>`<option value="${escapeHtml(c)}" ${predictState.city===c?'selected':''}>${escapeHtml(c)}</option>`).join('');
+  const majorOptions = majorCategories.map(m=>`<option value="${m.id}" ${predictState.majorId===m.id?'selected':''}>${escapeHtml(m.name)}</option>`).join('');
+  const minorCandidates = predictState.majorId !== 'all' ? minorCategories.filter(mc=>mc.majorId===predictState.majorId) : minorCategories;
+  const minorOptions = minorCandidates.map(mc=>{
+    const parent = findMajorCategory(mc.majorId);
+    return `<option value="${mc.id}" ${predictState.minorId===mc.id?'selected':''}>${escapeHtml(mc.name)}${parent ? '（'+escapeHtml(parent.name)+'）' : ''}</option>`;
+  }).join('');
+
+  const result = computePrediction();
+
+  const resultHtml = result.n === 0 ? `
+    <p class="empty-msg">条件に合う過去の記録がまだありません。条件を減らすか、記録が増えてから試してください。</p>
+  ` : `
+    <div class="totals-grid">
+      <div class="total-box count"><div class="label">平均枚数（1回あたり）</div><div class="value">${formatNumber(Math.round(result.mean*10)/10)}枚</div></div>
+      <div class="total-box time"><div class="label">参考精度</div><div class="value">${result.confidence}%</div></div>
+    </div>
+    <table class="breakdown">
+      <tbody>
+        <tr><td>該当件数</td><td>${result.n}件</td></tr>
+        <tr><td>中央値</td><td>${formatNumber(result.median)}枚</td></tr>
+        <tr><td>最小 〜 最大</td><td>${formatNumber(result.min)}枚 〜 ${formatNumber(result.max)}枚</td></tr>
+        <tr><td>該当分の合計枚数</td><td>${formatNumber(result.sum)}枚</td></tr>
+      </tbody>
+    </table>
+    <p class="hint">
+      参考精度は「該当件数の多さ」と「実績のバラつきの少なさ」から算出した目安であり、統計的な保証ではありません。
+      条件に合う件数が少なかったり、実績の差が大きい条件ほど数値は低くなります。あくまで参考値としてご利用ください。
+    </p>
+  `;
+
+  return `
+    <div class="card">
+      <h2>枚数の予測（条件別の平均）</h2>
+      <p class="hint">曜日・都市・カテゴリなどの条件を選ぶと、過去の記録から平均枚数の目安を計算します。どれも入力必須ではなく、一部の条件だけでも、全部組み合わせても構いません。</p>
+      <div class="agg-controls">
+        <select id="predictType">
+          <option value="all" ${predictState.type==='all'?'selected':''}>すべての種類</option>
+          ${typeOptions}
+        </select>
+        <select id="predictDow">
+          <option value="all" ${predictState.dow==='all'?'selected':''}>すべての曜日</option>
+          ${dowOptions}
+        </select>
+        <select id="predictCity">
+          <option value="all" ${predictState.city==='all'?'selected':''}>すべての都市</option>
+          ${cityOptions}
+        </select>
+        <select id="predictMajor">
+          <option value="all" ${predictState.majorId==='all'?'selected':''}>すべての大カテゴリ</option>
+          ${majorOptions}
+        </select>
+        <select id="predictMinor">
+          <option value="all" ${predictState.minorId==='all'?'selected':''}>すべての小カテゴリ</option>
+          ${minorOptions}
+        </select>
+      </div>
+      ${resultHtml}
+    </div>
+  `;
+}
+
+function computePrediction(){
+  const matches = records.filter(r=>{
+    if(predictState.type!=='all' && r.type!==predictState.type) return false;
+    if(predictState.dow!=='all'){
+      const d = new Date(r.date + 'T00:00:00');
+      if(String(d.getDay()) !== predictState.dow) return false;
+    }
+    if(predictState.city!=='all'){
+      const v = r.venueId ? findVenue(r.venueId) : null;
+      if(!v || (v.city||'').trim() !== predictState.city) return false;
+    }
+    if(predictState.majorId!=='all' && r.categoryMajorId!==predictState.majorId) return false;
+    if(predictState.minorId!=='all' && r.categoryMinorId!==predictState.minorId) return false;
+    return true;
+  });
+
+  const counts = matches.map(r=>entryTotals(r).count);
+  const n = counts.length;
+  if(n === 0){
+    return { n: 0 };
+  }
+
+  const sum = counts.reduce((a,b)=>a+b, 0);
+  const mean = sum / n;
+  const sorted = counts.slice().sort((a,b)=>a-b);
+  const mid = Math.floor(n / 2);
+  const median = n % 2 === 0 ? (sorted[mid-1] + sorted[mid]) / 2 : sorted[mid];
+  const min = sorted[0];
+  const max = sorted[n-1];
+
+  let variance = 0;
+  if(n > 1){
+    variance = counts.reduce((s,c)=>s + Math.pow(c - mean, 2), 0) / (n - 1);
+  }
+  const stdev = Math.sqrt(variance);
+  const cv = mean > 0 ? stdev / mean : 0;
+
+  // 件数が多いほど、バラつき（変動係数）が小さいほど精度を高く見積もる簡易的な目安
+  const sizeFactor = n / (n + 8);
+  const variabilityFactor = 1 / (1 + cv);
+  let confidence = Math.round(sizeFactor * variabilityFactor * 100);
+  confidence = Math.max(5, Math.min(95, confidence));
+
+  return { n, mean, median, min, max, sum, stdev, cv, confidence };
 }
 
 function computeCountSeries(){
@@ -1254,6 +1370,17 @@ function attachAggEvents(){
   modeSel.addEventListener('change', ()=>{ aggState.mode = modeSel.value; renderMain(); });
   yearSel.addEventListener('change', ()=>{ aggState.y = Number(yearSel.value); renderMain(); });
   if(monthSel) monthSel.addEventListener('change', ()=>{ aggState.m = Number(monthSel.value); renderMain(); });
+
+  const predictTypeSel = app.querySelector('#predictType');
+  const predictDowSel = app.querySelector('#predictDow');
+  const predictCitySel = app.querySelector('#predictCity');
+  const predictMajorSel = app.querySelector('#predictMajor');
+  const predictMinorSel = app.querySelector('#predictMinor');
+  if(predictTypeSel) predictTypeSel.addEventListener('change', ()=>{ predictState.type = predictTypeSel.value; renderMain(); });
+  if(predictDowSel) predictDowSel.addEventListener('change', ()=>{ predictState.dow = predictDowSel.value; renderMain(); });
+  if(predictCitySel) predictCitySel.addEventListener('change', ()=>{ predictState.city = predictCitySel.value; renderMain(); });
+  if(predictMajorSel) predictMajorSel.addEventListener('change', ()=>{ predictState.majorId = predictMajorSel.value; predictState.minorId = 'all'; renderMain(); });
+  if(predictMinorSel) predictMinorSel.addEventListener('change', ()=>{ predictState.minorId = predictMinorSel.value; renderMain(); });
 }
 
 /* =========================================================
