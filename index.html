@@ -258,6 +258,9 @@
   .datamgmt input[type=file]{display:none;}
   .hint{font-size:11.5px;color:var(--ink-soft);line-height:1.6;}
   .empty-msg{color:var(--ink-soft);font-size:12.5px;padding:10px 0;}
+  table.list-table tr.excluded-row{opacity:0.4;}
+  table.list-table tr.excluded-row td{text-decoration:line-through;}
+  table.list-table td input[type=checkbox]{width:16px;height:16px;text-decoration:none;}
   .cat-tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:10.5px;color:#fff;margin-right:4px;}
   .cat-hapica-kind{background:var(--mustard);}
 </style>
@@ -421,7 +424,7 @@ TYPE_ORDER.forEach(t=>{
 });
 
 const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
-const predictState = { type: 'all', dow: 'all', city: 'all', majorId: 'all', minorId: 'all' };
+const predictState = { type: 'all', dow: 'all', city: 'all', majorId: 'all', minorId: 'all', excludedIds: new Set() };
 const DOW_LABELS = ['日','月','火','水','木','金','土'];
 
 const venueState = { editingId: null, page: 1, pageSize: 20, search: '' };
@@ -1132,7 +1135,9 @@ function renderPredictionCardHtml(){
     return `<option value="${mc.id}" ${predictState.minorId===mc.id?'selected':''}>${escapeHtml(mc.name)}${parent ? '（'+escapeHtml(parent.name)+'）' : ''}</option>`;
   }).join('');
 
-  const result = computePrediction();
+  const allMatches = getPredictionMatches();
+  const includedMatches = allMatches.filter(r=>!predictState.excludedIds.has(r.id));
+  const result = computePredictionStats(includedMatches);
 
   const resultHtml = result.n === 0 ? `
     <p class="empty-msg">条件に合う過去の記録がまだありません。条件を減らすか、記録が増えてから試してください。</p>
@@ -1153,6 +1158,37 @@ function renderPredictionCardHtml(){
       参考精度は「該当件数の多さ」と「実績のバラつきの少なさ」から算出した目安であり、統計的な保証ではありません。
       条件に合う件数が少なかったり、実績の差が大きい条件ほど数値は低くなります。あくまで参考値としてご利用ください。
     </p>
+  `;
+
+  const checklistRowsHtml = allMatches.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(r=>{
+    const cfg = TYPE_CONFIG[r.type];
+    const venue = r.venueId ? findVenue(r.venueId) : null;
+    const venueLabel = venue ? escapeHtml(venue.name) + (venue.city ? `（${escapeHtml(venue.city)}）` : '') : (r.location ? escapeHtml(r.location) : '－');
+    const majorCat = r.categoryMajorId ? findMajorCategory(r.categoryMajorId) : null;
+    const minorCat = r.categoryMinorId ? findMinorCategory(r.categoryMinorId) : null;
+    const catLabel = majorCat ? escapeHtml(majorCat.name) + (minorCat ? '／'+escapeHtml(minorCat.name) : '') : '－';
+    const isChecked = !predictState.excludedIds.has(r.id);
+    const count = entryTotals(r).count;
+    return `<tr class="${isChecked ? '' : 'excluded-row'}">
+      <td><input type="checkbox" data-predict-include="${r.id}" ${isChecked ? 'checked' : ''}></td>
+      <td>${r.date}</td>
+      <td>${cfg.label}</td>
+      <td>${venueLabel}</td>
+      <td>${catLabel}</td>
+      <td>${escapeHtml(r.event||'－')}</td>
+      <td>${formatNumber(count)}</td>
+    </tr>`;
+  }).join('');
+
+  const checklistHtml = allMatches.length === 0 ? '' : `
+    <h3>該当する記録（含める／含めないを選択できます）</h3>
+    <p class="hint">チェックを外した記録は、上の平均などの計算から除外されます。値段は表示していません。</p>
+    <div class="list-table-wrap">
+      <table class="breakdown list-table">
+        <thead><tr><th>含める</th><th>日付</th><th>種類</th><th>会場</th><th>カテゴリ</th><th>イベント名</th><th>枚数</th></tr></thead>
+        <tbody>${checklistRowsHtml}</tbody>
+      </table>
+    </div>
   `;
 
   return `
@@ -1184,12 +1220,13 @@ function renderPredictionCardHtml(){
         </select>
       </div>
       ${resultHtml}
+      ${checklistHtml}
     </div>
   `;
 }
 
-function computePrediction(){
-  const matches = records.filter(r=>{
+function getPredictionMatches(){
+  return records.filter(r=>{
     if(predictState.type!=='all' && r.type!==predictState.type) return false;
     if(predictState.dow!=='all'){
       const dow = new Date(r.date + 'T00:00:00').getDay();
@@ -1209,7 +1246,9 @@ function computePrediction(){
     if(predictState.minorId!=='all' && r.categoryMinorId!==predictState.minorId) return false;
     return true;
   });
+}
 
+function computePredictionStats(matches){
   const counts = matches.map(r=>entryTotals(r).count);
   const n = counts.length;
   if(n === 0){
@@ -1389,6 +1428,18 @@ function attachAggEvents(){
   if(predictCitySel) predictCitySel.addEventListener('change', ()=>{ predictState.city = predictCitySel.value; renderMain(); });
   if(predictMajorSel) predictMajorSel.addEventListener('change', ()=>{ predictState.majorId = predictMajorSel.value; predictState.minorId = 'all'; renderMain(); });
   if(predictMinorSel) predictMinorSel.addEventListener('change', ()=>{ predictState.minorId = predictMinorSel.value; renderMain(); });
+
+  app.querySelectorAll('[data-predict-include]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const id = cb.dataset.predictInclude;
+      if(cb.checked){
+        predictState.excludedIds.delete(id);
+      }else{
+        predictState.excludedIds.add(id);
+      }
+      renderMain();
+    });
+  });
 }
 
 /* =========================================================
