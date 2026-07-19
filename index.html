@@ -269,7 +269,7 @@
 
 <header class="top">
   <h1>推し活記録帳 <span class="stamp">LEDGER</span></h1>
-  <p>2ショット・手売り・握手・ハピカを日付ごとに記録</p>
+  <p>2ショット・オン特・手売り・握手・ハピカを日付ごとに記録</p>
 </header>
 
 <nav class="tabs" id="tabNav"></nav>
@@ -293,6 +293,16 @@ const TYPE_CONFIG = {
     hasAdvance: true,
     advanceFeeOptions: [220,110],
     defaultAdvanceFee: 220
+  },
+  'ontoku': {
+    label: 'オン特',
+    hasSeconds: true,
+    defaultPrice: 4000,
+    defaultSeconds: 120,
+    comboPresets: [
+      { price: 4000, seconds: 120, label: '4000円・2分' },
+      { price: 2000, seconds: 60, label: '2000円・1分' }
+    ]
   },
   'tenuri': {
     label: '手売り',
@@ -319,7 +329,7 @@ const TYPE_CONFIG = {
     pricePresets: []
   }
 };
-const TYPE_ORDER = ['2shot','tenuri','akushu','hapica'];
+const TYPE_ORDER = ['2shot','ontoku','tenuri','akushu','hapica'];
 const DEFAULT_HAPICA_KINDS = [];
 const LEGACY_HAPICA_KIND_MAP = { nekomimi: '猫耳', metsumuri: '目つむり', other: 'その他' };
 const LEGACY_DEFAULT_KIND_NAMES = ['猫耳', '目つむり', 'その他'];
@@ -423,7 +433,7 @@ TYPE_ORDER.forEach(t=>{
   state.editingId[t] = null;
 });
 
-const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1 };
+const aggState = { mode:'month', y: today.getFullYear(), m: today.getMonth()+1, viewType: 'nonhapica', chartMetric: 'count' };
 const predictState = { type: 'all', dow: 'all', city: 'all', majorId: 'all', minorId: 'all', excludedIds: new Set() };
 const DOW_LABELS = ['日','月','火','水','木','金','土'];
 
@@ -697,6 +707,10 @@ function renderDayPanelHtml(type, dateStr){
     <div class="preset-row">
       ${cfg.secondsPresets.map(s=>`<button type="button" data-preset-seconds="${s}" class="${Number(defaultSeconds)===s?'active':''}">${s}秒</button>`).join('')}
     </div>` : '';
+  const comboPresetHtml = cfg.comboPresets && cfg.comboPresets.length ? `
+    <div class="preset-row">
+      ${cfg.comboPresets.map(c=>`<button type="button" data-combo-price="${c.price}" data-combo-seconds="${c.seconds}" class="${Number(defaultPrice)===c.price && Number(defaultSeconds)===c.seconds ?'active':''}">${c.label}</button>`).join('')}
+    </div>` : '';
 
   const defaultHapicaKind = editingEntry ? (editingEntry.hapicaCategory || '')
     : (lastSetting ? (lastSetting.hapicaCategory || '') : (hapicaKinds[0] || ''));
@@ -818,6 +832,7 @@ function renderDayPanelHtml(type, dateStr){
           </label>
         </div>
         ${presetPriceHtml}
+        ${comboPresetHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
         ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div>${hapicaKindAddHtml}` : ''}
         ${advanceHtml}
@@ -911,6 +926,18 @@ function attachRecordTabEvents(type){
       const form = btn.closest('form');
       form.querySelector('[name=unitSeconds]').value = btn.dataset.presetSeconds;
       btn.parentElement.querySelectorAll('[data-preset-seconds]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // プリセットボタン（金額＋秒数をまとめて設定）
+  app.querySelectorAll('[data-combo-price]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const form = btn.closest('form');
+      form.querySelector('[name=unitPrice]').value = btn.dataset.comboPrice;
+      const secondsField = form.querySelector('[name=unitSeconds]');
+      if(secondsField) secondsField.value = btn.dataset.comboSeconds;
+      btn.parentElement.querySelectorAll('[data-combo-price]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
     });
   });
@@ -1068,7 +1095,30 @@ function renderAggTabHtml(){
 
   const filtered = getFilteredRecords();
   const totals = computeTotals(filtered);
-  const series = computeCountSeries();
+  const chartMetric = aggState.chartMetric === 'minutes' ? 'minutes' : 'count';
+  const series = computeCountSeries(chartMetric);
+  const chartValueFormatter = chartMetric === 'minutes'
+    ? (v => (Math.round(v*10)/10).toLocaleString('ja-JP') + '分')
+    : (v => formatNumber(v) + '枚');
+
+  const nonHapicaTypes = TYPE_ORDER.filter(t=>t!=='hapica');
+  const viewTypeOptions = [
+    { key:'nonhapica', label:'全体（ハピカ除く）' },
+    ...nonHapicaTypes.map(t=>({ key:t, label:TYPE_CONFIG[t].label }))
+  ];
+  let viewStats;
+  if(aggState.viewType === 'nonhapica'){
+    viewStats = nonHapicaTypes.reduce((acc,t)=>{
+      const s = computeTypeStats(t, filtered);
+      acc.count += s.count;
+      acc.money += s.money;
+      acc.seconds += (s.seconds || 0);
+      return acc;
+    }, { count:0, money:0, seconds:0 });
+    viewStats.hasSeconds = true;
+  }else{
+    viewStats = computeTypeStats(aggState.viewType, filtered);
+  }
 
   return `
     <div class="card">
@@ -1083,15 +1133,23 @@ function renderAggTabHtml(){
         <select id="aggMonth" style="${aggState.mode==='month'?'':'display:none'}">${monthOptions}</select>
       </div>
 
-      <h3>枚数の推移（${escapeHtml(series.unitLabel)}別・全種類合計）</h3>
+      <h3>推移グラフ（${escapeHtml(series.unitLabel)}別・全種類合計）</h3>
+      <div class="preset-row">
+        <button type="button" data-chart-metric="count" class="${chartMetric==='count'?'active':''}">枚数</button>
+        <button type="button" data-chart-metric="minutes" class="${chartMetric==='minutes'?'active':''}">秒数（分表示）</button>
+      </div>
       <div class="chart-wrap">
-        ${renderBarChartSvg(series.labels, series.values)}
+        ${renderBarChartSvg(series.labels, series.values, chartValueFormatter)}
       </div>
 
-      <h3>2ショット・手売り・握手（合計）</h3>
+      <h3>枚数・秒数・金額（種類別）</h3>
+      <div class="preset-row">
+        ${viewTypeOptions.map(o=>`<button type="button" data-agg-view="${o.key}" class="${aggState.viewType===o.key?'active':''}">${escapeHtml(o.label)}</button>`).join('')}
+      </div>
       <div class="totals-grid">
-        <div class="total-box time"><div class="label">合計秒数</div><div class="value">${formatSeconds(totals.shotSeconds)}</div></div>
-        <div class="total-box money"><div class="label">合計金額</div><div class="value">${formatYen(totals.shotMoney)}</div></div>
+        <div class="total-box count"><div class="label">合計枚数</div><div class="value">${formatNumber(viewStats.count)}枚</div></div>
+        ${viewStats.hasSeconds ? `<div class="total-box time"><div class="label">合計秒数</div><div class="value">${formatSeconds(viewStats.seconds)}</div></div>` : ''}
+        <div class="total-box money"><div class="label">合計金額</div><div class="value">${formatYen(viewStats.money)}</div></div>
       </div>
 
       <h3>ハピカ</h3>
@@ -1279,7 +1337,17 @@ function computePredictionStats(matches){
   return { n, mean, median, min, max, sum, stdev, cv, confidence };
 }
 
-function computeCountSeries(){
+function recordSeconds(r){
+  const cfg = TYPE_CONFIG[r.type];
+  if(!cfg.hasSeconds) return 0;
+  const advCount = (cfg.hasAdvance && r.isAdvance && r.advanceCount) ? Number(r.advanceCount) : 0;
+  return (Number(r.count||0) + advCount) * Number(r.unitSeconds||0);
+}
+
+function computeCountSeries(metric){
+  metric = metric || 'count';
+  const valueOf = metric === 'minutes' ? (r => recordSeconds(r) / 60) : (r => entryTotals(r).count);
+
   if(aggState.mode === 'month'){
     const y = aggState.y, m = aggState.m;
     const daysInMonth = new Date(y, m, 0).getDate();
@@ -1289,7 +1357,7 @@ function computeCountSeries(){
     records.forEach(r=>{
       const ry = Number(r.date.slice(0,4)), rm = Number(r.date.slice(5,7)), rd = Number(r.date.slice(8,10));
       if(ry===y && rm===m && rd>=1 && rd<=daysInMonth){
-        values[rd-1] += entryTotals(r).count;
+        values[rd-1] += valueOf(r);
       }
     });
     return { labels, values, unitLabel: '日' };
@@ -1301,7 +1369,7 @@ function computeCountSeries(){
     records.forEach(r=>{
       const ry = Number(r.date.slice(0,4)), rm = Number(r.date.slice(5,7));
       if(ry===y && rm>=1 && rm<=12){
-        values[rm-1] += entryTotals(r).count;
+        values[rm-1] += valueOf(r);
       }
     });
     return { labels, values, unitLabel: '月' };
@@ -1329,18 +1397,19 @@ function computeCountSeries(){
   records.forEach(r=>{
     const key = r.date.slice(0,7);
     const idx = keys.indexOf(key);
-    if(idx>=0) values[idx] += entryTotals(r).count;
+    if(idx>=0) values[idx] += valueOf(r);
   });
   return { labels, values, unitLabel: '月' };
 }
 
-function renderBarChartSvg(labels, values){
+function renderBarChartSvg(labels, values, valueFormatter){
   const w = 640, h = 200;
   const paddingLeft = 34, paddingBottom = 26, paddingTop = 16, paddingRight = 10;
   const chartW = w - paddingLeft - paddingRight;
   const chartH = h - paddingTop - paddingBottom;
   const n = Math.max(1, values.length);
   const maxVal = Math.max(1, ...values);
+  const fmt = valueFormatter || formatNumber;
   const slot = chartW / n;
   const barGap = slot > 10 ? 3 : 1;
   const barW = Math.max(1.5, slot - barGap);
@@ -1372,7 +1441,7 @@ function renderBarChartSvg(labels, values){
         </linearGradient>
       </defs>
       <line x1="${paddingLeft}" y1="${paddingTop}" x2="${w-paddingRight}" y2="${paddingTop}" stroke="#dcd8c8" stroke-dasharray="3,3"/>
-      <text x="${paddingLeft-4}" y="${paddingTop+4}" font-size="9" fill="#565f77" text-anchor="end">${formatNumber(maxVal)}</text>
+      <text x="${paddingLeft-4}" y="${paddingTop+4}" font-size="9" fill="#565f77" text-anchor="end">${fmt(maxVal)}</text>
       <line x1="${paddingLeft}" y1="${paddingTop+chartH}" x2="${w-paddingRight}" y2="${paddingTop+chartH}" stroke="#b7b3a2"/>
       ${bars}
       ${labelsSvg}
@@ -1392,7 +1461,7 @@ function getFilteredRecords(){
 }
 
 function computeTotals(list){
-  const shotTypes = ['2shot','tenuri','akushu'];
+  const shotTypes = ['2shot','ontoku','tenuri','akushu'];
   let shotSeconds=0, shotMoney=0, hapicaCount=0, hapicaMoney=0, allCount=0;
   list.forEach(r=>{
     const advCount = (r.isAdvance && r.advanceCount) ? Number(r.advanceCount) : 0;
@@ -1409,6 +1478,17 @@ function computeTotals(list){
   return { shotSeconds, shotMoney, hapicaCount, hapicaMoney, allCount };
 }
 
+function computeTypeStats(type, list){
+  const cfg = TYPE_CONFIG[type];
+  const typeList = list.filter(r=>r.type===type);
+  const advCntOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
+  const advMoneyOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount)*Number(e.advancePrice||0) : 0;
+  const count = typeList.reduce((s,e)=>s+Number(e.count||0)+advCntOf(e), 0);
+  const money = typeList.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e), 0);
+  const seconds = cfg.hasSeconds ? typeList.reduce((s,e)=>s+(Number(e.count||0)+advCntOf(e))*Number(e.unitSeconds||0), 0) : 0;
+  return { count, money, seconds, hasSeconds: !!cfg.hasSeconds };
+}
+
 function attachAggEvents(){
   const app = document.getElementById('app');
   const modeSel = app.querySelector('#aggMode');
@@ -1417,6 +1497,20 @@ function attachAggEvents(){
   modeSel.addEventListener('change', ()=>{ aggState.mode = modeSel.value; renderMain(); });
   yearSel.addEventListener('change', ()=>{ aggState.y = Number(yearSel.value); renderMain(); });
   if(monthSel) monthSel.addEventListener('change', ()=>{ aggState.m = Number(monthSel.value); renderMain(); });
+
+  app.querySelectorAll('[data-agg-view]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      aggState.viewType = btn.dataset.aggView;
+      renderMain();
+    });
+  });
+
+  app.querySelectorAll('[data-chart-metric]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      aggState.chartMetric = btn.dataset.chartMetric;
+      renderMain();
+    });
+  });
 
   const predictTypeSel = app.querySelector('#predictType');
   const predictDowSel = app.querySelector('#predictDow');
