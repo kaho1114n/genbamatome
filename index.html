@@ -14,13 +14,11 @@
     --teal:#2f6f6a;
     --mustard:#c98a2c;
     --purple:#6a3fa0;
-    --accent-strong:#6a3fa0;
-    --accent-soft:#8a5fc2;
-    --accent-pale:#f7f2fb;
-    --accent-pastel:#d9c9f0;
+    --accent-strong:#6f4fa3;
+    --accent-soft:#9a7dc4;
+    --accent-pale:#f3eef9;
+    --accent-pastel:#cab8d9;
     --pastel-text:#4a3728;
-    --header-bg:#242a3b;
-    --header-text:#f2f0e6;
     --card:#fbfaf5;
     --shadow: 0 1px 2px rgba(36,42,59,0.08), 0 4px 10px rgba(36,42,59,0.06);
   }
@@ -34,8 +32,8 @@
     padding-bottom:40px;
   }
   header.top{
-    background:var(--header-bg);
-    color:var(--header-text);
+    background:linear-gradient(135deg, var(--accent-pale), var(--accent-pastel));
+    color:var(--pastel-text);
     padding:18px 16px 14px;
     position:sticky;
     top:0;
@@ -56,12 +54,12 @@
   }
   .theme-dot{
     width:22px;height:22px;border-radius:50%;
-    border:2px solid rgba(255,255,255,0.32);
+    border:2px solid rgba(74,55,40,0.25);
     cursor:pointer;padding:0;
   }
   .theme-dot.active{
-    border-color:#fff;
-    box-shadow:0 0 0 2px rgba(255,255,255,0.28);
+    border-color:var(--pastel-text);
+    box-shadow:0 0 0 2px rgba(74,55,40,0.18);
   }
   header.top h1{
     margin:0 0 2px;
@@ -74,40 +72,42 @@
   header.top h1 .stamp{
     display:inline-block;
     border:1.5px solid var(--stamp-red);
-    color:#f0a3ab;
+    color:var(--stamp-red);
     border-radius:4px;
     padding:1px 6px;
     font-size:11px;
     letter-spacing:0.1em;
     transform:rotate(-4deg);
   }
-  header.top p{margin:0;font-size:11.5px;color:#b7bccb;}
+  header.top p{margin:0;font-size:11.5px;color:var(--pastel-text);opacity:0.75;}
 
   nav.tabs{
     display:flex;
     overflow-x:auto;
     gap:6px;
     padding:10px 12px 0;
-    background:var(--header-bg);
+    background:var(--accent-pastel);
     position:sticky;
     top:62px;
     z-index:19;
   }
   nav.tabs button{
     flex:0 0 auto;
-    background:rgba(255,255,255,0.14);
-    color:var(--header-text);
+    background:rgba(255,255,255,0.55);
+    color:var(--pastel-text);
     border:none;
     padding:9px 14px;
     border-radius:10px 10px 0 0;
     font-size:13px;
     cursor:pointer;
     white-space:nowrap;
+    opacity:0.75;
   }
   nav.tabs button.active{
-    background:var(--accent-pastel);
-    color:var(--pastel-text);
+    background:var(--card);
+    color:var(--accent-strong);
     font-weight:700;
+    opacity:1;
   }
 
   main{max-width:760px;margin:0 auto;padding:16px 12px 60px;}
@@ -211,7 +211,7 @@
   .preset-row button{
     border:1px solid var(--paper-line);background:#fff;border-radius:20px;padding:5px 10px;font-size:11.5px;cursor:pointer;color:var(--ink-soft);
   }
-  .preset-row button.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .preset-row button.active{background:var(--accent-pastel);color:var(--pastel-text);border-color:var(--accent-soft);}
   .submit-btn{
     background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
   }
@@ -242,20 +242,6 @@
   }
   .advance-block .preset-row button[data-advance-fee].active{background:var(--accent-pastel);color:var(--pastel-text);border-color:var(--accent-soft);}
   .cat-tag.cat-advance{background:var(--accent-pastel);color:var(--pastel-text);}
-
-  .fee-stepper{
-    display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;
-  }
-  .fee-stepper button[data-fee-step]{
-    width:34px;height:34px;border-radius:50%;border:1.5px solid var(--teal);background:#fff;color:var(--teal);
-    font-size:18px;font-weight:700;cursor:pointer;line-height:1;
-  }
-  .fee-stepper .fee-stepper-value{
-    font-weight:700;font-size:14px;min-width:32px;text-align:center;font-variant-numeric:tabular-nums;
-  }
-  .fee-stepper .fee-stepper-total{
-    font-size:12.5px;color:var(--stamp-red);font-weight:700;font-variant-numeric:tabular-nums;
-  }
 
   .agg-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
   .agg-controls select,.agg-controls input{padding:7px 8px;border-radius:8px;border:1px solid var(--paper-line);font-size:13px;}
@@ -316,10 +302,10 @@
       <p>2ショット・オン特・手売り・握手・ハピカを日付ごとに記録</p>
     </div>
     <div class="theme-switcher" id="themeSwitcher">
-      <button type="button" class="theme-dot" data-theme="purple" style="background:#d9c9f0;" title="紫"></button>
-      <button type="button" class="theme-dot" data-theme="yellow" style="background:#f3dfa0;" title="黄色"></button>
-      <button type="button" class="theme-dot" data-theme="blue" style="background:#c6ddf2;" title="青"></button>
-      <button type="button" class="theme-dot" data-theme="green" style="background:#c8e6d0;" title="緑"></button>
+      <button type="button" class="theme-dot" data-theme="purple" style="background:#cab8d9;" title="紫"></button>
+      <button type="button" class="theme-dot" data-theme="yellow" style="background:#fdfd96;" title="黄色"></button>
+      <button type="button" class="theme-dot" data-theme="blue" style="background:#87b1fa;" title="青"></button>
+      <button type="button" class="theme-dot" data-theme="green" style="background:#87fab3;" title="緑"></button>
     </div>
   </div>
 </header>
@@ -336,10 +322,10 @@ const STORAGE_KEY = 'oshiRecordAppData_v1';
 const THEME_STORAGE_KEY = 'oshiRecordAppTheme_v1';
 
 const THEMES = {
-  purple: { label:'紫',   strong:'#6a3fa0', soft:'#8a5fc2', pale:'#f7f2fb', pastel:'#d9c9f0', pastelText:'#4a3728', headerBg:'#242a3b', headerText:'#f2f0e6' },
-  yellow: { label:'黄色', strong:'#8a6510', soft:'#c9a13c', pale:'#faf3e0', pastel:'#f3dfa0', pastelText:'#4a3728', headerBg:'#332a12', headerText:'#f5efe0' },
-  blue:   { label:'青',   strong:'#3f6fa0', soft:'#6f9dc9', pale:'#eef5fb', pastel:'#c6ddf2', pastelText:'#4a3728', headerBg:'#16283d', headerText:'#eaf2fb' },
-  green:  { label:'緑',   strong:'#2f7048', soft:'#4fa878', pale:'#eef8f1', pastel:'#c8e6d0', pastelText:'#4a3728', headerBg:'#17281c', headerText:'#eaf3ea' }
+  purple: { label:'紫',   strong:'#6f4fa3', soft:'#9a7dc4', pale:'#f3eef9', pastel:'#cab8d9', pastelText:'#4a3728' },
+  yellow: { label:'黄色', strong:'#6b5a12', soft:'#d4c458', pale:'#fdf8d2', pastel:'#fdfd96', pastelText:'#4a3728' },
+  blue:   { label:'青',   strong:'#27519b', soft:'#5c8fd4', pale:'#eaf2fd', pastel:'#87b1fa', pastelText:'#4a3728' },
+  green:  { label:'緑',   strong:'#1f7040', soft:'#4fb37a', pale:'#e9f9ee', pastel:'#87fab3', pastelText:'#4a3728' }
 };
 
 function loadThemeKey(){
@@ -367,8 +353,6 @@ function applyTheme(key){
   root.setProperty('--accent-pale', theme.pale);
   root.setProperty('--accent-pastel', theme.pastel);
   root.setProperty('--pastel-text', theme.pastelText);
-  root.setProperty('--header-bg', theme.headerBg);
-  root.setProperty('--header-text', theme.headerText);
   try{ localStorage.setItem(THEME_STORAGE_KEY, t); }catch(e){ /* 保存できなくても表示は反映される */ }
   document.querySelectorAll('.theme-dot').forEach(btn=>{
     btn.classList.toggle('active', btn.dataset.theme === t);
@@ -385,10 +369,7 @@ const TYPE_CONFIG = {
     secondsPresets: [30,60],
     hasAdvance: true,
     advanceFeeOptions: [220,110],
-    defaultAdvanceFee: 220,
-    hasSurchargeFee: true,
-    surchargeFeeOptions: [220,110],
-    defaultSurchargeFee: 220
+    defaultAdvanceFee: 220
   },
   'ontoku': {
     label: 'オン特',
@@ -546,17 +527,6 @@ function toDateStr(y,m,d){ return y+'-'+pad2(m+1)+'-'+pad2(d); }
 function formatYen(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); }
 function formatNumber(n){ return Math.round(n).toLocaleString('ja-JP'); }
 
-function updateFeeStepperDisplay(form){
-  const countField = form.querySelector('[name=feeCount]');
-  const amountField = form.querySelector('[name=feeAmount]');
-  if(!countField || !amountField) return;
-  const count = Number(countField.value || 0);
-  const amount = Number(amountField.value || 0);
-  const countDisplay = form.querySelector('[data-fee-count-display]');
-  const totalDisplay = form.querySelector('[data-fee-total-display]');
-  if(countDisplay) countDisplay.textContent = count + '回';
-  if(totalDisplay) totalDisplay.textContent = '合計 +' + formatNumber(count * amount) + '円';
-}
 function formatSeconds(sec){
   sec = Math.round(sec);
   const m = Math.floor(sec/60);
@@ -774,7 +744,7 @@ function renderDayPanelHtml(type, dateStr){
   }else{
     entriesHtml = entries.map(e=>{
       const hasAdv = cfg.hasAdvance && e.isAdvance && Number(e.advanceCount) > 0;
-      const money = Number(e.count) * Number(e.unitPrice) + (hasAdv ? Number(e.advanceCount) * Number(e.advancePrice) : 0) + surchargeFeeMoney(e);
+      const money = Number(e.count) * Number(e.unitPrice) + (hasAdv ? Number(e.advanceCount) * Number(e.advancePrice) : 0);
       let line2 = '';
       if(cfg.hasSeconds){
         line2 = `${e.unitPrice}円/枚 ・ ${e.unitSeconds}秒/枚`;
@@ -784,9 +754,6 @@ function renderDayPanelHtml(type, dateStr){
       }
       const advLine = hasAdv
         ? `<div class="line2"><span class="cat-tag cat-advance">前売り</span>${e.advanceCount}枚 ・ ${e.advancePrice}円/枚（手数料+${e.advanceFee}円込み）</div>`
-        : '';
-      const feeLine = (e.feeCount && e.feeAmount)
-        ? `<div class="line2">手数料 ${e.feeAmount}円 × ${e.feeCount}回（+${formatNumber(Number(e.feeCount)*Number(e.feeAmount))}円）</div>`
         : '';
       const venue = e.venueId ? findVenue(e.venueId) : null;
       const venueLabel = venue ? venue.name + (venue.city ? `（${venue.city}）` : '') : (e.location || '会場未設定');
@@ -799,7 +766,6 @@ function renderDayPanelHtml(type, dateStr){
             <div class="line1">${escapeHtml(venueLabel)} ／ ${evCatLabel}${escapeHtml(e.event||'（イベント未記入）')} ・ ${e.count}枚</div>
             <div class="line2">${line2}</div>
             ${advLine}
-            ${feeLine}
           </div>
           <div class="money">${formatYen(money)}</div>
           <div class="actions">
@@ -823,31 +789,6 @@ function renderDayPanelHtml(type, dateStr){
     <div class="preset-row">
       ${cfg.comboPresets.map(c=>`<button type="button" data-combo-price="${c.price}" data-combo-seconds="${c.seconds}" class="${Number(defaultPrice)===c.price && Number(defaultSeconds)===c.seconds ?'active':''}">${c.label}</button>`).join('')}
     </div>` : '';
-
-  const defaultFeeCount = editingEntry ? Number(editingEntry.feeCount||0) : (lastSetting ? Number(lastSetting.feeCount||0) : 0);
-  const defaultFeeAmount = (editingEntry && editingEntry.feeAmount) ? Number(editingEntry.feeAmount)
-    : ((lastSetting && lastSetting.feeAmount) ? Number(lastSetting.feeAmount) : (cfg.defaultSurchargeFee || 0));
-  const isSurchargeOn = editingEntry ? !!(editingEntry.feeCount && editingEntry.feeCount > 0) : (defaultFeeCount > 0);
-  const surchargeFeeHtml = cfg.hasSurchargeFee ? `
-    <div class="row">
-      <button type="button" class="advance-toggle-btn ${isSurchargeOn?'active':''}" data-surcharge-toggle>${isSurchargeOn ? '手数料別途：ON' : '手数料別途：OFF'}</button>
-    </div>
-    <input type="hidden" name="feeToggleOn" value="${isSurchargeOn ? 1 : 0}">
-    <div class="advance-block" data-surcharge-block style="${isSurchargeOn ? '' : 'display:none;'}">
-      <p class="hint" style="margin-bottom:4px;">手数料を追加（必要な回数だけ加算できます）</p>
-      <div class="preset-row" data-fee-amount-row>
-        ${cfg.surchargeFeeOptions.map(f=>`<button type="button" data-surcharge-fee-amount="${f}" class="${Number(defaultFeeAmount)===f?'active':''}">${f}円</button>`).join('')}
-      </div>
-      <div class="fee-stepper">
-        <button type="button" data-fee-step="-1">－</button>
-        <span class="fee-stepper-value" data-fee-count-display>${defaultFeeCount}回</span>
-        <button type="button" data-fee-step="1">＋</button>
-        <span class="fee-stepper-total" data-fee-total-display>合計 +${formatNumber(defaultFeeCount * defaultFeeAmount)}円</span>
-      </div>
-      <input type="hidden" name="feeCount" value="${defaultFeeCount}">
-      <input type="hidden" name="feeAmount" value="${defaultFeeAmount}">
-    </div>
-  ` : '';
 
   const defaultHapicaKind = editingEntry ? (editingEntry.hapicaCategory || '')
     : (lastSetting ? (lastSetting.hapicaCategory || '') : (hapicaKinds[0] || ''));
@@ -970,7 +911,6 @@ function renderDayPanelHtml(type, dateStr){
         </div>
         ${presetPriceHtml}
         ${comboPresetHtml}
-        ${surchargeFeeHtml}
         ${cfg.hasSeconds ? `<div class="row">${secondsFieldHtml}</div>${presetSecondsHtml}` : ''}
         ${hapicaKindHtml ? `<div class="row">${hapicaKindHtml}</div>${hapicaKindAddHtml}` : ''}
         ${advanceHtml}
@@ -1080,29 +1020,6 @@ function attachRecordTabEvents(type){
     });
   });
 
-  // 手数料の金額ボタン（220円／110円）
-  app.querySelectorAll('[data-surcharge-fee-amount]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const form = btn.closest('form');
-      const amount = Number(btn.dataset.surchargeFeeAmount);
-      form.querySelector('[name=feeAmount]').value = amount;
-      btn.parentElement.querySelectorAll('[data-surcharge-fee-amount]').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      updateFeeStepperDisplay(form);
-    });
-  });
-
-  // 手数料の加算回数ステッパー（－／＋）
-  app.querySelectorAll('[data-fee-step]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const form = btn.closest('form');
-      const countField = form.querySelector('[name=feeCount]');
-      const next = Math.max(0, Number(countField.value || 0) + Number(btn.dataset.feeStep));
-      countField.value = next;
-      updateFeeStepperDisplay(form);
-    });
-  });
-
   // 前売りトグルボタン
   app.querySelectorAll('[data-advance-toggle]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1123,27 +1040,6 @@ function attachRecordTabEvents(type){
         const advPriceField = form.querySelector('[name=advancePrice]');
         if(advPriceField && !advPriceField.dataset.touched){
           advPriceField.value = basePrice + fee;
-        }
-      }
-    });
-  });
-
-  // 手数料別途トグルボタン
-  app.querySelectorAll('[data-surcharge-toggle]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const form = btn.closest('form');
-      const hidden = form.querySelector('[name=feeToggleOn]');
-      const block = form.querySelector('[data-surcharge-block]');
-      const isNowOn = hidden.value !== '1';
-      hidden.value = isNowOn ? '1' : '0';
-      btn.classList.toggle('active', isNowOn);
-      btn.textContent = isNowOn ? '手数料別途：ON' : '手数料別途：OFF';
-      block.style.display = isNowOn ? '' : 'none';
-      if(isNowOn){
-        const countField = form.querySelector('[name=feeCount]');
-        if(countField && Number(countField.value || 0) === 0){
-          countField.value = 1;
-          updateFeeStepperDisplay(form);
         }
       }
     });
@@ -1249,13 +1145,6 @@ function attachRecordTabEvents(type){
           entry.advanceFee = undefined;
         }
       }
-      if(cfg.hasSurchargeFee){
-        const isFeeOn = fd.get('feeToggleOn') === '1';
-        const feeCount = isFeeOn ? (Number(fd.get('feeCount')) || 0) : 0;
-        const feeAmount = Number(fd.get('feeAmount')) || 0;
-        entry.feeCount = feeCount;
-        entry.feeAmount = feeCount > 0 ? feeAmount : undefined;
-      }
 
       if(editingId){
         const idx = records.findIndex(r=>r.id===editingId);
@@ -1357,7 +1246,7 @@ function renderAggTabHtml(){
             const advCntOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
             const advMoneyOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount)*Number(e.advancePrice||0) : 0;
             const cnt = list.reduce((s,e)=>s+Number(e.count||0)+advCntOf(e),0);
-            const money = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e)+surchargeFeeMoney(e),0);
+            const money = list.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e),0);
             const sec = cfg.hasSeconds ? list.reduce((s,e)=>s+(Number(e.count||0)+advCntOf(e))*Number(e.unitSeconds||0),0) : null;
             return `<tr><td>${cfg.label}</td><td>${cnt}枚</td><td>${sec!==null ? formatSeconds(sec) : '－'}</td><td>${formatYen(money)}</td></tr>`;
           }).join('')}
@@ -1533,11 +1422,6 @@ function recordSeconds(r){
   return (Number(r.count||0) + advCount) * Number(r.unitSeconds||0);
 }
 
-function surchargeFeeMoney(r){
-  const cfg = TYPE_CONFIG[r.type];
-  return (cfg.hasSurchargeFee && r.feeCount && r.feeAmount) ? Number(r.feeCount) * Number(r.feeAmount) : 0;
-}
-
 function computeCountSeries(metric){
   metric = metric || 'count';
   const valueOf = metric === 'minutes' ? (r => recordSeconds(r) / 60) : (r => entryTotals(r).count);
@@ -1663,7 +1547,7 @@ function computeTotals(list){
     allCount += Number(r.count||0) + advCount;
     if(shotTypes.includes(r.type)){
       shotSeconds += (Number(r.count||0) + advCount) * Number(r.unitSeconds||0);
-      shotMoney += Number(r.count||0) * Number(r.unitPrice||0) + advMoney + surchargeFeeMoney(r);
+      shotMoney += Number(r.count||0) * Number(r.unitPrice||0) + advMoney;
     }else if(r.type==='hapica'){
       hapicaCount += Number(r.count||0);
       hapicaMoney += Number(r.count||0) * Number(r.unitPrice||0);
@@ -1678,7 +1562,7 @@ function computeTypeStats(type, list){
   const advCntOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
   const advMoneyOf = e => (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount)*Number(e.advancePrice||0) : 0;
   const count = typeList.reduce((s,e)=>s+Number(e.count||0)+advCntOf(e), 0);
-  const money = typeList.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e)+surchargeFeeMoney(e), 0);
+  const money = typeList.reduce((s,e)=>s+Number(e.count||0)*Number(e.unitPrice||0)+advMoneyOf(e), 0);
   const seconds = cfg.hasSeconds ? typeList.reduce((s,e)=>s+(Number(e.count||0)+advCntOf(e))*Number(e.unitSeconds||0), 0) : 0;
   return { count, money, seconds, hasSeconds: !!cfg.hasSeconds };
 }
@@ -1834,9 +1718,7 @@ function handleImportFile(file, mode){
         isAdvance: !!r.isAdvance,
         advanceCount: r.advanceCount!==undefined ? Number(r.advanceCount) : undefined,
         advancePrice: r.advancePrice!==undefined ? Number(r.advancePrice) : undefined,
-        advanceFee: r.advanceFee!==undefined ? Number(r.advanceFee) : undefined,
-        feeCount: r.feeCount!==undefined ? Number(r.feeCount) : undefined,
-        feeAmount: r.feeAmount!==undefined ? Number(r.feeAmount) : undefined
+        advanceFee: r.advanceFee!==undefined ? Number(r.advanceFee) : undefined
       }));
       const cleanedVenues = incomingVenues.filter(v=>v && v.name).map(v=>({
         id: v.id || uid(), name: v.name, city: v.city || ''
@@ -2311,7 +2193,7 @@ function entryTotals(e){
   const advCount = (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) : 0;
   const advMoney = (cfg.hasAdvance && e.isAdvance && e.advanceCount) ? Number(e.advanceCount) * Number(e.advancePrice||0) : 0;
   const count = Number(e.count||0) + advCount;
-  const money = Number(e.count||0) * Number(e.unitPrice||0) + advMoney + surchargeFeeMoney(e);
+  const money = Number(e.count||0) * Number(e.unitPrice||0) + advMoney;
   return { count, money };
 }
 
